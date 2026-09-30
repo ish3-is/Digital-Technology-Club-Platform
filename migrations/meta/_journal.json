@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790548612067,
+      "tag": "0000_real_power_pack",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790549979815,
+      "tag": "0001_graceful_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790556260557,
+      "tag": "0002_rare_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790558333942,
+      "tag": "0003_majestic_morlun",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790640000000,
+      "tag": "0004_governance_evidence_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790640000001,
+      "tag": "0005_governance_schema_alignment",
+      "breakpoints": true
+    }
+  ]
+}
