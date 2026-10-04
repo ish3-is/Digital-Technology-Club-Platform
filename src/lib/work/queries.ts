@@ -542,7 +542,18 @@ export async function inbox(ctx: Identity) {
 }
 export async function search(ctx: Identity, query: string) {
   if (query.trim().length < 2) return [];
-  return (await listWork(ctx, undefined, query.trim()))
-    .slice(0, 30)
-    .map((w) => ({ id: w.id, title: w.title, kind: w.kind, status: w.status }));
+  // People results join the same search rather than introducing a second system.
+  const { searchPeople } = await import("../people/queries");
+  const people = await searchPeople(ctx, query).catch(() => []);
+  return [
+    ...people,
+    ...(await listWork(ctx, undefined, query.trim()))
+      .slice(0, 30)
+      .map((w) => ({
+        id: w.id,
+        title: w.title,
+        kind: w.kind,
+        status: w.status,
+      })),
+  ].slice(0, 30);
 }

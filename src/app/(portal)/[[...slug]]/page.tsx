@@ -28,6 +28,7 @@ import { kinds, type Kind } from "@/lib/work/model";
 import { EventCenter } from "@/components/event-center";
 import { listEvents, eventDetail, eventOptions } from "@/lib/events/queries";
 import { governanceInbox } from "@/lib/governance/queries";
+import { SupervisorBrief } from "@/components/supervisor-brief";
 export const dynamic = "force-dynamic";
 function Empty({
   icon: Icon = Inbox,
@@ -101,6 +102,25 @@ export default async function Page({
         ),
       ),
   );
+  // People items flow into the same universal inbox rather than a separate queue.
+  const { peopleInbox } = await import("@/lib/people/queries");
+  const peopleActions = await peopleInbox(ctx).catch(() => []);
+  const todayActions = [
+    ...actions.map((a) => ({
+      id: a.id,
+      title: a.title,
+      action: a.action,
+      href: `/work?item=${a.id}`,
+      bucket: a.bucket,
+    })),
+    ...peopleActions.map((a) => ({
+      id: a.id,
+      title: a.title,
+      action: a.action,
+      href: a.href,
+      bucket: "الناس",
+    })),
+  ];
   let content: React.ReactNode;
   if (section === "events") {
     if (slug.length > 2) notFound();
@@ -185,10 +205,10 @@ export default async function Page({
                 <h2>وش عليك اليوم؟</h2>
                 <span className="subtle-chip">مساحة عملك</span>
               </div>
-              {actions.length ? (
+              {todayActions.length ? (
                 <div className="home-work-actions">
-                  {actions.slice(0, 4).map((w) => (
-                    <Link key={w.id} href={`/work?item=${w.id}`}>
+                  {todayActions.slice(0, 6).map((w) => (
+                    <Link key={w.id} href={w.href}>
                       <span>
                         <strong>{w.title}</strong>
                         <small>{w.action}</small>
@@ -552,7 +572,14 @@ export default async function Page({
     );
   } else if (section === "supervisor") {
     if (!data.supervisor) notFound();
-    content = (
+    // The brief is built from the intelligence layer, so the supervisor sees the
+    // same derived operational numbers as leadership — scoped by their grants,
+    // and with no committee-internal editing.
+    const { supervisorBrief } = await import("@/lib/intelligence/supervisor");
+    const brief = await supervisorBrief(ctx, query.range ?? "term").catch(() => null);
+    content = brief ? (
+      <SupervisorBrief brief={JSON.parse(JSON.stringify(brief))} />
+    ) : (
       <>
         <Heading
           label="رؤية المشرف"
@@ -562,8 +589,8 @@ export default async function Page({
         <section className="panel">
           <Empty
             icon={FileCheck2}
-            title="لا توجد تقارير للمراجعة"
-            body="تظهر التقارير المقدمة إليك عند إطلاق مسار التقارير والاعتمادات."
+            title="تعذر تحميل ملخص الإشراف"
+            body="تعذّر بناء الملخص من السجلات الحالية. لن تظهر أرقام غير مؤكدة."
           />
         </section>
       </>

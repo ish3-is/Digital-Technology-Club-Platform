@@ -16,10 +16,17 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env scripts/migrate.ts",
+    "seed:demo": "tsx --env-file=.env scripts/seed-demo.ts",
+    "seed:demo:reset": "tsx --env-file=.env scripts/seed-demo.ts --reset",
     "provision": "tsx --env-file=.env scripts/provision.ts",
     "org": "tsx --env-file=.env scripts/organization.ts",
     "work:due": "tsx --env-file=.env scripts/due-work.ts",
-    "format": "prettier --write src scripts tests *.ts"
+    "format": "prettier --write src scripts tests *.ts",
+    "check:migrations": "tsx --env-file=.env scripts/check-migrations.ts",
+    "smoke:runtime": "tsx --env-file=.env scripts/smoke-runtime.ts",
+    "smoke:intelligence": "tsx scripts/smoke-intel-content.ts",
+    "probe:intelligence": "tsx --env-file=.env scripts/probe-intel.ts",
+    "smoke:intelligence:p75": "tsx scripts/smoke-p75.ts"
   },
   "keywords": [],
   "author": "",

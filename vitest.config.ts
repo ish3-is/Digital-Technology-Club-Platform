@@ -7,5 +7,11 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     fileParallelism: false,
+    // Set before any module loads: static imports hoist above module bodies,
+    // so a test cannot assign this from inside its own file.
+    env: {
+      BETTER_AUTH_SECRET:
+        "intelligence-test-secret-with-at-least-thirty-two-characters",
+    },
   },
 });

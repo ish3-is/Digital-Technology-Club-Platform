@@ -1220,3 +1220,1232 @@ export const eventReports = pgTable(
     ),
   ],
 );
+
+// ========================
+// Phase 5: People, Membership & Contribution
+// ========================
+
+// Identity fields live here; authorization lives in user_role_assignments.
+export const memberProfiles = pgTable(
+  "member_profiles",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    studentId: text("student_id"),
+    phone: text("phone"),
+    major: text("major"),
+    college: text("college"),
+    academicLevel: text("academic_level"),
+    gender: text("gender").$type<"male" | "female">(),
+    joinedAt: time("joined_at"),
+    status: text("status")
+      .notNull()
+      .default("new")
+      .$type<
+        "new" | "active" | "low_engagement" | "inactive" | "withdrawn" | "archived"
+      >(),
+    // Explainable only: leadership records the reason; nothing is inferred silently.
+    statusReason: text("status_reason"),
+    skills: jsonb("skills").$type<string[]>().notNull().default([]),
+    interests: jsonb("interests").$type<string[]>().notNull().default([]),
+    developmentGoals: jsonb("development_goals").$type<string[]>().notNull().default([]),
+    previousExperience: text("previous_experience").notNull().default(""),
+    preferredAreas: jsonb("preferred_areas").$type<string[]>().notNull().default([]),
+    availability: text("availability").notNull().default(""),
+    motivation: text("motivation").notNull().default(""),
+    managementNotes: text("management_notes").notNull().default(""),
+    imageUrl: text("image_url"),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "member_status",
+      sql`${t.status} in ('new','active','low_engagement','inactive','withdrawn','archived')`,
+    ),
+    uniqueIndex("member_profiles_student_idx")
+      .on(t.studentId)
+      .where(sql`${t.studentId} IS NOT NULL`),
+    index("member_profiles_status_idx").on(t.status),
+  ],
+);
+
+// The club-level role a member holds, kept separate from RBAC role assignments.
+export const memberRoleHistory = pgTable(
+  "member_role_history",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    clubRole: text("club_role").notNull(),
+    previousClubRole: text("previous_club_role"),
+    committeeId: text("committee_id").references(() => committees.id),
+    academicTermId: text("academic_term_id").references(() => terms.id),
+    reason: text("reason").notNull().default(""),
+    assignedBy: text("assigned_by")
+      .notNull()
+      .references(() => user.id),
+    startAt: time("start_at").notNull().defaultNow(),
+    endAt: time("end_at"),
+  },
+  (t) => [
+    index("member_role_history_user_idx").on(t.userId, t.startAt),
+    uniqueIndex("member_role_history_active")
+      .on(t.userId)
+      .where(sql`${t.endAt} IS NULL`),
+  ],
+);
+
+export const membershipApplications = pgTable(
+  "membership_applications",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    fullName: text("full_name").notNull(),
+    studentId: text("student_id").notNull(),
+    major: text("major").notNull().default(""),
+    email: text("email").notNull(),
+    phone: text("phone").notNull().default(""),
+    skills: jsonb("skills").$type<string[]>().notNull().default([]),
+    interests: jsonb("interests").$type<string[]>().notNull().default([]),
+    previousExperience: text("previous_experience").notNull().default(""),
+    preferredCommitteeId: text("preferred_committee_id").references(
+      () => committees.id,
+    ),
+    alternateCommitteeId: text("alternate_committee_id").references(
+      () => committees.id,
+    ),
+    motivation: text("motivation").notNull().default(""),
+    developmentGoals: jsonb("development_goals").$type<string[]>().notNull().default([]),
+    availability: text("availability").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    status: text("status")
+      .notNull()
+      .default("submitted")
+      .$type<
+        | "submitted"
+        | "under_review"
+        | "shortlisted"
+        | "interview"
+        | "accepted"
+        | "rejected"
+        | "waitlisted"
+        | "converted"
+      >(),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    assignedReviewerId: text("assigned_reviewer_id").references(() => user.id),
+    convertedUserId: text("converted_user_id").references(() => user.id),
+    decidedAt: time("decided_at"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "application_status",
+      sql`${t.status} in ('submitted','under_review','shortlisted','interview','accepted','rejected','waitlisted','converted')`,
+    ),
+    index("application_status_idx").on(t.status),
+    index("application_reviewer_idx").on(t.assignedReviewerId),
+    index("application_term_idx").on(t.academicTermId),
+  ],
+);
+
+// Append-only decision log; a decision never overwrites the previous one.
+export const applicationReviews = pgTable(
+  "application_reviews",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    applicationId: text("application_id")
+      .notNull()
+      .references(() => membershipApplications.id, { onDelete: "cascade" }),
+    reviewerId: text("reviewer_id")
+      .notNull()
+      .references(() => user.id),
+    previousStatus: text("previous_status").notNull(),
+    newStatus: text("new_status").notNull(),
+    decision: text("decision")
+      .notNull()
+      .$type<"assigned" | "shortlisted" | "accepted" | "rejected" | "waitlisted" | "note">(),
+    reason: text("reason").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("application_reviews_application_idx").on(t.applicationId),
+    index("application_reviews_reviewer_idx").on(t.reviewerId),
+  ],
+);
+
+// Placement history; the previous row is closed, never deleted.
+export const memberCommitteeHistory = pgTable(
+  "member_committee_history",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    committeeId: text("committee_id")
+      .notNull()
+      .references(() => committees.id),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    assignmentType: text("assignment_type")
+      .notNull()
+      .default("permanent")
+      .$type<"permanent" | "temporary" | "collaboration">(),
+    reason: text("reason").notNull().default(""),
+    placedBy: text("placed_by")
+      .notNull()
+      .references(() => user.id),
+    startAt: time("start_at").notNull().defaultNow(),
+    endAt: time("end_at"),
+  },
+  (t) => [
+    index("member_committee_history_user_idx").on(t.userId, t.startAt),
+    index("member_committee_history_committee_idx").on(t.committeeId),
+  ],
+);
+
+export const memberStatusHistory = pgTable(
+  "member_status_history",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    previousStatus: text("previous_status"),
+    newStatus: text("new_status").notNull(),
+    reason: text("reason").notNull().default(""),
+    changedBy: text("changed_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("member_status_history_user_idx").on(t.userId, t.createdAt)],
+);
+
+export const transferRequests = pgTable(
+  "transfer_requests",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    fromCommitteeId: text("from_committee_id").references(() => committees.id),
+    toCommitteeId: text("to_committee_id")
+      .notNull()
+      .references(() => committees.id),
+    reason: text("reason").notNull(),
+    notes: text("notes").notNull().default(""),
+    status: text("status")
+      .notNull()
+      .default("requested")
+      .$type<"requested" | "approved" | "rejected">(),
+    requestedBy: text("requested_by")
+      .notNull()
+      .references(() => user.id),
+    reviewedBy: text("reviewed_by").references(() => user.id),
+    decisionNotes: text("decision_notes").notNull().default(""),
+    decidedAt: time("decided_at"),
+    effectiveAt: time("effective_at"),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("transfer_status", sql`${t.status} in ('requested','approved','rejected')`),
+    index("transfer_requests_user_idx").on(t.userId),
+    index("transfer_requests_status_idx").on(t.status),
+  ],
+);
+
+export const onboardingPlans = pgTable(
+  "onboarding_plans",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    status: text("status")
+      .notNull()
+      .default("in_progress")
+      .$type<"in_progress" | "completed" | "cancelled">(),
+    startedAt: time("started_at").notNull().defaultNow(),
+    completedAt: time("completed_at"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+  },
+  (t) => [
+    uniqueIndex("onboarding_plan_term_unique").on(t.userId, t.academicTermId),
+    index("onboarding_plans_status_idx").on(t.status),
+  ],
+);
+
+export const onboardingSteps = pgTable(
+  "onboarding_steps",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    planId: text("plan_id")
+      .notNull()
+      .references(() => onboardingPlans.id, { onDelete: "cascade" }),
+    stepKey: text("step_key").notNull(),
+    title: text("title").notNull(),
+    position: text("position").notNull(),
+    status: text("status")
+      .notNull()
+      .default("pending")
+      .$type<"pending" | "in_progress" | "completed" | "skipped">(),
+    ownerId: text("owner_id").references(() => user.id),
+    dueAt: time("due_at"),
+    completedAt: time("completed_at"),
+    // A step is never auto-completed; this records the action that justified it.
+    completionNote: text("completion_note").notNull().default(""),
+    linkedWorkId: text("linked_work_id"),
+    linkedEventId: text("linked_event_id"),
+    completedBy: text("completed_by").references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("onboarding_steps_plan_key").on(t.planId, t.stepKey),
+    check(
+      "onboarding_step_status",
+      sql`${t.status} in ('pending','in_progress','completed','skipped')`,
+    ),
+    index("onboarding_steps_plan_idx").on(t.planId),
+  ],
+);
+
+export const mentorAssignments = pgTable(
+  "mentor_assignments",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    mentorId: text("mentor_id")
+      .notNull()
+      .references(() => user.id),
+    menteeId: text("mentee_id")
+      .notNull()
+      .references(() => user.id),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    status: text("status")
+      .notNull()
+      .default("active")
+      .$type<"active" | "completed" | "ended">(),
+    notes: text("notes").notNull().default(""),
+    followUpAt: time("follow_up_at"),
+    assignedBy: text("assigned_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+    endedAt: time("ended_at"),
+  },
+  (t) => [
+    check("no_self_mentoring", sql`${t.mentorId} <> ${t.menteeId}`),
+    check("mentor_status", sql`${t.status} in ('active','completed','ended')`),
+    index("mentor_assignments_mentor_idx").on(t.mentorId),
+    index("mentor_assignments_mentee_idx").on(t.menteeId),
+  ],
+);
+
+export const volunteerHourEntries = pgTable(
+  "volunteer_hour_entries",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id),
+    sourceType: text("source_type")
+      .notNull()
+      .$type<"event" | "meeting" | "workshop" | "committee_work" | "external">(),
+    sourceId: text("source_id"),
+    activityTitle: text("activity_title").notNull(),
+    date: time("date").notNull(),
+    hours: integer("hours").notNull(),
+    notes: text("notes").notNull().default(""),
+    status: text("status")
+      .notNull()
+      .default("pending")
+      .$type<"pending" | "approved" | "rejected">(),
+    submittedBy: text("submitted_by")
+      .notNull()
+      .references(() => user.id),
+    approverId: text("approver_id").references(() => user.id),
+    decisionNotes: text("decision_notes").notNull().default(""),
+    decidedAt: time("decided_at"),
+    evidenceId: text("evidence_id").references(() => evidence.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("volunteer_status", sql`${t.status} in ('pending','approved','rejected')`),
+    check("volunteer_hours_positive", sql`${t.hours} > 0`),
+    check(
+      "volunteer_hours_integer",
+      sql`${t.hours} = round(${t.hours})`,
+    ),
+    index("volunteer_hours_member_idx").on(t.memberId, t.date),
+    index("volunteer_hours_status_idx").on(t.status),
+  ],
+);
+
+export const achievements = pgTable(
+  "member_achievements",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    category: text("category")
+      .notNull()
+      .$type<
+        | "project"
+        | "event_leadership"
+        | "initiative"
+        | "certificate"
+        | "competition"
+        | "milestone"
+        | "recognition"
+        | "internal_award"
+      >(),
+    achievedAt: time("achieved_at").notNull(),
+    issuerId: text("issuer_id")
+      .notNull()
+      .references(() => user.id),
+    visibility: text("visibility")
+      .notNull()
+      .default("members")
+      .$type<"management" | "committee" | "members">(),
+    verificationStatus: text("verification_status")
+      .notNull()
+      .default("unreviewed")
+      .$type<"unreviewed" | "verified" | "rejected">(),
+    evidenceId: text("evidence_id").references(() => evidence.id),
+    sourceEntityType: text("source_entity_type"),
+    sourceEntityId: text("source_entity_id"),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "achievement_verification",
+      sql`${t.verificationStatus} in ('unreviewed','verified','rejected')`,
+    ),
+    check(
+      "achievement_visibility",
+      sql`${t.visibility} in ('management','committee','members')`,
+    ),
+    index("achievements_member_idx").on(t.memberId, t.achievedAt),
+  ],
+);
+
+export const badgeDefinitions = pgTable(
+  "badge_definitions",
+  {
+    key: text("key").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    icon: text("icon").notNull().default("award"),
+    // Machine-readable, explainable eligibility; never a free-form score.
+    rule: jsonb("rule")
+      .$type<{ type: string; threshold: number; unit: string }>()
+      .notNull(),
+    active: boolean("active").notNull().default(true),
+    repeatable: boolean("repeatable").notNull().default(false),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("badge_definitions_active_idx").on(t.active)],
+);
+
+export const memberBadges = pgTable(
+  "member_badges",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    badgeKey: text("badge_key")
+      .notNull()
+      .references(() => badgeDefinitions.key),
+    reason: text("reason").notNull().default(""),
+    awardedBy: text("awarded_by")
+      .notNull()
+      .references(() => user.id),
+    awardedAt: time("awarded_at").notNull().defaultNow(),
+    revokedAt: time("revoked_at"),
+    revokeReason: text("revoke_reason").notNull().default(""),
+  },
+  (t) => [
+    index("member_badges_member_idx").on(t.memberId),
+    uniqueIndex("member_badge_once")
+      .on(t.memberId, t.badgeKey)
+      .where(sql`${t.revokedAt} IS NULL`),
+  ],
+);
+
+export const xpTransactions = pgTable(
+  "xp_transactions",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    points: integer("points").notNull(),
+    sourceType: text("source_type").notNull(),
+    sourceId: text("source_id"),
+    reason: text("reason").notNull(),
+    ruleKey: text("rule_key"),
+    automatic: boolean("automatic").notNull().default(true),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("xp_points_sign", sql`${t.points} <> 0`),
+    index("xp_transactions_member_idx").on(t.memberId, t.createdAt),
+  ],
+);
+
+export const impactTransactions = pgTable(
+  "impact_transactions",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    points: integer("points").notNull(),
+    sourceType: text("source_type").notNull(),
+    sourceId: text("source_id"),
+    reason: text("reason").notNull(),
+    ruleKey: text("rule_key"),
+    automatic: boolean("automatic").notNull().default(true),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("impact_points_sign", sql`${t.points} <> 0`),
+    index("impact_transactions_member_idx").on(t.memberId, t.createdAt),
+  ],
+);
+
+export const handovers = pgTable(
+  "member_handovers",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    kind: text("kind")
+      .notNull()
+      .$type<"role_change" | "committee_transfer" | "exit">(),
+    committeeId: text("committee_id").references(() => committees.id),
+    successorId: text("successor_id").references(() => user.id),
+    responsibilities: text("responsibilities").notNull().default(""),
+    activeTasks: text("active_tasks").notNull().default(""),
+    pendingDecisions: text("pending_decisions").notNull().default(""),
+    activeEvents: text("active_events").notNull().default(""),
+    files: text("files").notNull().default(""),
+    resources: text("resources").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    status: text("status")
+      .notNull()
+      .default("pending")
+      .$type<"pending" | "completed">(),
+    completedAt: time("completed_at"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("handover_status", sql`${t.status} in ('pending','completed')`),
+    index("handovers_user_idx").on(t.userId),
+    index("handovers_status_idx").on(t.status),
+  ],
+);
+
+// Configurable progression and impact rules; no leaderboard is derived here.
+export const contributionRules = pgTable(
+  "contribution_rules",
+  {
+    key: text("key").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    metric: text("metric")
+      .notNull()
+      .$type<"completed_tasks" | "event_participation" | "event_organized" | "onboarding_completed" | "volunteer_hours" | "meetings_attended">(),
+    threshold: integer("threshold").notNull().default(1),
+    xpPoints: integer("xp_points").notNull().default(0),
+    impactPoints: integer("impact_points").notNull().default(0),
+    active: boolean("active").notNull().default(true),
+  },
+  (t) => [index("contribution_rules_active_idx").on(t.active)],
+);
+
+export const peopleEvents = pgTable(
+  "people_events",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    actorId: text("actor_id").references(() => user.id),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    memberId: text("member_id").references(() => user.id),
+    committeeId: text("committee_id").references(() => committees.id),
+    metadata: jsonb("metadata").notNull().default({}),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("people_events_entity_idx").on(t.entityType, t.entityId),
+    index("people_events_member_idx").on(t.memberId),
+    index("people_events_actor_idx").on(t.actorId),
+  ],
+);
+
+export type MemberStatus = typeof memberProfiles.$inferSelect["status"];
+export type ApplicationStatus = typeof membershipApplications.$inferSelect["status"];
+export type TransferStatus = typeof transferRequests.$inferSelect["status"];
+export type OnboardingStepStatus = typeof onboardingSteps.$inferSelect["status"];
+export type VolunteerHourStatus = typeof volunteerHourEntries.$inferSelect["status"];
+export type AchievementCategory = typeof achievements.$inferSelect["category"];
+export type AchievementVerification = typeof achievements.$inferSelect["verificationStatus"];
+export type MentorStatus = typeof mentorAssignments.$inferSelect["status"];
+export type HandoverStatus = typeof handovers.$inferSelect["status"];
+
+// ========================
+// End Phase 5 Type Exports
+// ========================
+
+// ========================
+// Phase 6: Specialized Committee Operations
+// ========================
+
+// --- Finance -------------------------------------------------------------
+export const budgets = pgTable(
+  "operation_budgets",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    committeeId: text("committee_id").references(() => committees.id),
+    eventId: text("event_id").references(() => events.id),
+    initiativeId: text("initiative_id").references(() => initiatives.id),
+    allocatedAmount: integer("allocated_amount").notNull(),
+    currency: text("currency").notNull().default("SAR"),
+    startsOn: time("starts_on").notNull(),
+    // Nullable so an open-ended budget does not need a sentinel date.
+    endsOn: time("ends_on"),
+    // A threshold, not a stored alert: alerts are derived, never persisted.
+    alertThresholdPercent: integer("alert_threshold_percent")
+      .notNull()
+      .default(80),
+    status: text("status")
+      .notNull()
+      .default("active")
+      .$type<"active" | "closed" | "archived">(),
+    notes: text("notes").notNull().default(""),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("budget_amount_positive", sql`${t.allocatedAmount} > 0`),
+    check(
+      "budget_dates",
+      sql`${t.endsOn} IS NULL OR ${t.endsOn} >= ${t.startsOn}`,
+    ),
+    check(
+      "budget_threshold",
+      sql`${t.alertThresholdPercent} between 1 and 100`,
+    ),
+    check(
+      "budget_status",
+      sql`${t.status} in ('active','closed','archived')`,
+    ),
+    index("budgets_term_idx").on(t.academicTermId),
+    index("budgets_committee_idx").on(t.committeeId),
+    index("budgets_event_idx").on(t.eventId),
+    index("budgets_status_idx").on(t.status),
+  ],
+);
+
+export const expenseRequests = pgTable(
+  "operation_expense_requests",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    requesterId: text("requester_id")
+      .notNull()
+      .references(() => user.id),
+    committeeId: text("committee_id").references(() => committees.id),
+    budgetId: text("budget_id").references(() => budgets.id),
+    eventId: text("event_id").references(() => events.id),
+    workRequestId: text("work_request_id").references(() => requests.id),
+    category: text("category")
+      .notNull()
+      .$type<
+        | "supplies"
+        | "catering"
+        | "venue"
+        | "transport"
+        | "printing"
+        | "equipment"
+        | "software"
+        | "other"
+      >(),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull().default("SAR"),
+    neededBy: time("needed_by"),
+    justification: text("justification").notNull().default(""),
+    status: text("status")
+      .notNull()
+      .default("draft")
+      .$type<
+        | "draft"
+        | "submitted"
+        | "finance_review"
+        | "changes_requested"
+        | "approved"
+        | "rejected"
+        | "purchased"
+        | "reconciled"
+        | "cancelled"
+        | "archived"
+      >(),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    reviewedBy: text("reviewed_by").references(() => user.id),
+    approvedBy: text("approved_by").references(() => user.id),
+    submittedAt: time("submitted_at"),
+    decidedAt: time("decided_at"),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("expense_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "expense_status",
+      sql`${t.status} in ('draft','submitted','finance_review','changes_requested','approved','rejected','purchased','reconciled','cancelled','archived')`,
+    ),
+    index("expenses_term_idx").on(t.academicTermId),
+    index("expenses_status_idx").on(t.status),
+    index("expenses_budget_idx").on(t.budgetId),
+    index("expenses_event_idx").on(t.eventId),
+    index("expenses_requester_idx").on(t.requesterId),
+    index("expenses_approver_idx").on(t.approvedBy),
+  ],
+);
+
+// Append-only decision log; it is the record that survived every state change.
+export const expenseDecisions = pgTable(
+  "operation_expense_decisions",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    expenseId: text("expense_id")
+      .notNull()
+      .references(() => expenseRequests.id, { onDelete: "cascade" }),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => user.id),
+    action: text("action").notNull(),
+    fromStatus: text("from_status").notNull(),
+    toStatus: text("to_status").notNull(),
+    note: text("note").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("expense_decisions_expense_idx").on(t.expenseId),
+    index("expense_decisions_actor_idx").on(t.actorId),
+  ],
+);
+
+export const purchases = pgTable(
+  "operation_purchases",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    expenseId: text("expense_id")
+      .notNull()
+      .references(() => expenseRequests.id, { onDelete: "cascade" }),
+    vendor: text("vendor").notNull(),
+    reference: text("reference").notNull().default(""),
+    purchasedAt: time("purchased_at").notNull(),
+    amount: integer("amount").notNull(),
+    paidById: text("paid_by_id")
+      .notNull()
+      .references(() => user.id),
+    receiptFileId: text("receipt_file_id").references(() => files.id),
+    invoiceFileId: text("invoice_file_id").references(() => files.id),
+    budgetId: text("budget_id").references(() => budgets.id),
+    reconciliationStatus: text("reconciliation_status")
+      .notNull()
+      .default("pending")
+      .$type<"pending" | "reconciled">(),
+    reconciliationNotes: text("reconciliation_notes").notNull().default(""),
+    reconciledBy: text("reconciled_by").references(() => user.id),
+    reconciledAt: time("reconciled_at"),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("purchase_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "purchase_reconciliation",
+      sql`${t.reconciliationStatus} in ('pending','reconciled')`,
+    ),
+    index("purchases_expense_idx").on(t.expenseId),
+    index("purchases_reconciliation_idx").on(t.reconciliationStatus),
+  ],
+);
+
+// --- Media ---------------------------------------------------------------
+export const mediaRequests = pgTable(
+  "operation_media_requests",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    requestedById: text("requested_by_id")
+      .notNull()
+      .references(() => user.id),
+    committeeId: text("committee_id").references(() => committees.id),
+    eventId: text("event_id").references(() => events.id),
+    workRequestId: text("work_request_id").references(() => requests.id),
+    mediaType: text("media_type")
+      .notNull()
+      .$type<
+        | "poster"
+        | "announcement"
+        | "social_post"
+        | "event_coverage"
+        | "photography"
+        | "video"
+        | "certificate"
+        | "member_card"
+        | "presentation"
+        | "story_reel"
+        | "other"
+      >(),
+    audience: text("audience").notNull().default(""),
+    platform: text("platform").notNull().default(""),
+    priority: text("priority")
+      .notNull()
+      .default("medium")
+      .$type<"low" | "medium" | "high" | "urgent">(),
+    deadline: time("deadline"),
+    specs: text("specs").notNull().default(""),
+    copyText: text("copy_text").notNull().default(""),
+    references: text("references").notNull().default(""),
+    assigneeId: text("assignee_id").references(() => user.id),
+    reviewerId: text("reviewer_id").references(() => user.id),
+    status: text("status")
+      .notNull()
+      .default("new")
+      .$type<
+        | "new"
+        | "accepted"
+        | "in_production"
+        | "in_review"
+        | "changes_requested"
+        | "approved"
+        | "scheduled"
+        | "published"
+        | "completed"
+        | "rejected"
+        | "cancelled"
+      >(),
+    scheduledFor: time("scheduled_for"),
+    publishedAt: time("published_at"),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "media_status",
+      sql`${t.status} in ('new','accepted','in_production','in_review','changes_requested','approved','scheduled','published','completed','rejected','cancelled')`,
+    ),
+    index("media_requests_term_idx").on(t.academicTermId),
+    index("media_requests_status_idx").on(t.status),
+    index("media_requests_event_idx").on(t.eventId),
+    index("media_requests_assignee_idx").on(t.assigneeId),
+    index("media_requests_reviewer_idx").on(t.reviewerId),
+  ],
+);
+
+export const mediaRevisions = pgTable(
+  "operation_media_revisions",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    mediaRequestId: text("media_request_id")
+      .notNull()
+      .references(() => mediaRequests.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    fileId: text("file_id").references(() => files.id),
+    note: text("note").notNull().default(""),
+    submittedById: text("submitted_by_id")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("media_revisions_unique").on(t.mediaRequestId, t.revision),
+    index("media_revisions_request_idx").on(t.mediaRequestId),
+  ],
+);
+
+export const mediaDecisions = pgTable(
+  "operation_media_decisions",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    mediaRequestId: text("media_request_id")
+      .notNull()
+      .references(() => mediaRequests.id, { onDelete: "cascade" }),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => user.id),
+    action: text("action").notNull(),
+    fromStatus: text("from_status").notNull(),
+    toStatus: text("to_status").notNull(),
+    note: text("note").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("media_decisions_request_idx").on(t.mediaRequestId),
+    index("media_decisions_actor_idx").on(t.actorId),
+  ],
+);
+
+// --- Digital -------------------------------------------------------------
+export const digitalRequests = pgTable(
+  "operation_digital_requests",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    description: text("description").notNull().default(""),
+    requestedById: text("requested_by_id")
+      .notNull()
+      .references(() => user.id),
+    committeeId: text("committee_id").references(() => committees.id),
+    eventId: text("event_id").references(() => events.id),
+    workRequestId: text("work_request_id").references(() => requests.id),
+    serviceType: text("service_type")
+      .notNull()
+      .$type<
+        | "registration_form"
+        | "survey"
+        | "vote"
+        | "meeting_link"
+        | "course_setup"
+        | "certificate_generation"
+        | "mailing_support"
+        | "data_extraction"
+        | "account_support"
+        | "digital_archive"
+        | "technical_support"
+      >(),
+    deadline: time("deadline"),
+    priority: text("priority")
+      .notNull()
+      .default("medium")
+      .$type<"low" | "medium" | "high" | "urgent">(),
+    assigneeId: text("assignee_id").references(() => user.id),
+    status: text("status")
+      .notNull()
+      .default("new")
+      .$type<
+        | "new"
+        | "received"
+        | "in_progress"
+        | "waiting_input"
+        | "in_review"
+        | "completed"
+        | "rejected"
+        | "cancelled"
+      >(),
+    // The produced resource, recorded rather than assumed.
+    resultUrl: text("result_url"),
+    resultFormId: text("result_form_id").references((): AnyPgColumn => digitalForms.id),
+    resultCertificateBatchId: text("result_certificate_batch_id").references(
+      (): AnyPgColumn => certificateBatches.id,
+    ),
+    academicTermId: text("academic_term_id")
+      .notNull()
+      .references(() => terms.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "digital_request_status",
+      sql`${t.status} in ('new','received','in_progress','waiting_input','in_review','completed','rejected','cancelled')`,
+    ),
+    index("digital_requests_term_idx").on(t.academicTermId),
+    index("digital_requests_status_idx").on(t.status),
+    index("digital_requests_event_idx").on(t.eventId),
+    index("digital_requests_assignee_idx").on(t.assigneeId),
+  ],
+);
+
+export const digitalForms = pgTable(
+  "operation_digital_forms",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    purpose: text("purpose").notNull().default(""),
+    ownerUserId: text("owner_user_id")
+      .notNull()
+      .references(() => user.id),
+    committeeId: text("committee_id").references(() => committees.id),
+    provider: text("provider").notNull().default(""),
+    // Only a public form URL; no credential is ever stored here.
+    url: text("url"),
+    eventId: text("event_id").references(() => events.id),
+    formType: text("form_type")
+      .notNull()
+      .default("registration")
+      .$type<"registration" | "survey" | "vote" | "feedback">(),
+    opensOn: time("opens_on"),
+    closesOn: time("closes_on"),
+    status: text("status")
+      .notNull()
+      .default("active")
+      .$type<"planned" | "active" | "closed" | "archived">(),
+    // Only recorded when someone actually supplies a measured count.
+    responseCount: integer("response_count"),
+    notes: text("notes").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "digital_form_status",
+      sql`${t.status} in ('planned','active','closed','archived')`,
+    ),
+    check(
+      "digital_form_responses",
+      sql`${t.responseCount} IS NULL OR ${t.responseCount} >= 0`,
+    ),
+    index("digital_forms_status_idx").on(t.status),
+    index("digital_forms_event_idx").on(t.eventId),
+  ],
+);
+
+export const certificateBatches = pgTable(
+  "operation_certificate_batches",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    title: text("title").notNull(),
+    templateRef: text("template_ref").notNull().default(""),
+    issuerId: text("issuer_id")
+      .notNull()
+      .references(() => user.id),
+    eventId: text("event_id").references(() => events.id),
+    issuedOn: time("issued_on").notNull(),
+    participantSource: text("participant_source").notNull().default(""),
+    status: text("status")
+      .notNull()
+      .default("draft")
+      .$type<"draft" | "generating" | "generated" | "sent" | "partial" | "archived">(),
+    // Counts are only ever advanced by a recorded action, never assumed.
+    generatedCount: integer("generated_count").notNull().default(0),
+    sentCount: integer("sent_count").notNull().default(0),
+    failureCount: integer("failure_count").notNull().default(0),
+    notes: text("notes").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "certificate_status",
+      sql`${t.status} in ('draft','generating','generated','sent','partial','archived')`,
+    ),
+    check(
+      "certificate_counts",
+      sql`${t.generatedCount} >= 0 AND ${t.sentCount} >= 0 AND ${t.failureCount} >= 0`,
+    ),
+    index("certificate_batches_event_idx").on(t.eventId),
+    index("certificate_batches_status_idx").on(t.status),
+  ],
+);
+
+// --- Resources -----------------------------------------------------------
+export const assets = pgTable(
+  "operation_assets",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    name: text("name").notNull(),
+    category: text("category").notNull(),
+    assetCode: text("asset_code"),
+    committeeId: text("committee_id").references(() => committees.id),
+    condition: text("condition")
+      .notNull()
+      .default("good")
+      .$type<"new" | "good" | "fair" | "damaged" | "maintenance">(),
+    availability: text("availability")
+      .notNull()
+      .default("available")
+      .$type<"available" | "reserved" | "checked_out" | "unavailable">(),
+    custodianId: text("custodian_id").references(() => user.id),
+    // Operational notes only; account credentials are never stored.
+    notes: text("notes").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("assets_code_unique")
+      .on(t.assetCode)
+      .where(sql`${t.assetCode} IS NOT NULL`),
+    check(
+      "asset_condition",
+      sql`${t.condition} in ('new','good','fair','damaged','maintenance')`,
+    ),
+    check(
+      "asset_availability",
+      sql`${t.availability} in ('available','reserved','checked_out','unavailable')`,
+    ),
+    index("assets_committee_idx").on(t.committeeId),
+    index("assets_availability_idx").on(t.availability),
+  ],
+);
+
+export const assetReservations = pgTable(
+  "operation_asset_reservations",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    requestedById: text("requested_by_id")
+      .notNull()
+      .references(() => user.id),
+    purpose: text("purpose").notNull(),
+    eventId: text("event_id").references(() => events.id),
+    startsAt: time("starts_at").notNull(),
+    endsAt: time("ends_at").notNull(),
+    status: text("status")
+      .notNull()
+      .default("requested")
+      .$type<"requested" | "approved" | "checked_out" | "returned" | "rejected" | "cancelled">(),
+    approverId: text("approver_id").references(() => user.id),
+    approvedAt: time("approved_at"),
+    checkedOutAt: time("checked_out_at"),
+    returnedAt: time("returned_at"),
+    conditionBefore: text("condition_before").notNull().default(""),
+    conditionAfter: text("condition_after").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "reservation_status",
+      sql`${t.status} in ('requested','approved','checked_out','returned','rejected','cancelled')`,
+    ),
+    check("reservation_dates", sql`${t.endsAt} > ${t.startsAt}`),
+    index("asset_reservations_asset_idx").on(t.assetId),
+    index("asset_reservations_status_idx").on(t.status),
+    index("asset_reservations_window_idx").on(t.startsAt, t.endsAt),
+  ],
+);
+
+export const assetIncidents = pgTable(
+  "operation_asset_incidents",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    assetId: text("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    reportedById: text("reported_by_id")
+      .notNull()
+      .references(() => user.id),
+    kind: text("kind")
+      .notNull()
+      .$type<"damaged" | "missing" | "maintenance" | "unavailable">(),
+    details: text("details").notNull().default(""),
+    // Deliberately optional: blame is never inferred.
+    responsibleUserId: text("responsible_user_id").references(() => user.id),
+    evidenceFileId: text("evidence_file_id").references(() => files.id),
+    resolution: text("resolution").notNull().default(""),
+    resolvedAt: time("resolved_at"),
+    status: text("status")
+      .notNull()
+      .default("open")
+      .$type<"open" | "resolved">(),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "incident_kind",
+      sql`${t.kind} in ('damaged','missing','maintenance','unavailable')`,
+    ),
+    check("incident_status", sql`${t.status} in ('open','resolved')`),
+    index("asset_incidents_asset_idx").on(t.assetId),
+    index("asset_incidents_status_idx").on(t.status),
+  ],
+);
+
+// Specialized operations audit; kept apart from Activity like the other domains.
+export const operationsEvents = pgTable(
+  "operation_events",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    actorId: text("actor_id").references(() => user.id),
+    action: text("action").notNull(),
+    domain: text("domain").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id").notNull(),
+    committeeId: text("committee_id").references(() => committees.id),
+    eventId: text("event_id").references(() => events.id),
+    metadata: jsonb("metadata").notNull().default({}),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "operations_domain",
+      sql`${t.domain} in ('finance','media','digital','resource')`,
+    ),
+    index("operations_events_entity_idx").on(t.entityType, t.entityId),
+    index("operations_events_domain_idx").on(t.domain),
+    index("operations_events_event_idx").on(t.eventId),
+    index("operations_events_actor_idx").on(t.actorId),
+  ],
+);
+
+export type BudgetStatus = typeof budgets.$inferSelect["status"];
+export type ExpenseStatus = typeof expenseRequests.$inferSelect["status"];
+export type ExpenseCategory = typeof expenseRequests.$inferSelect["category"];
+export type PurchaseReconciliation = typeof purchases.$inferSelect["reconciliationStatus"];
+export type MediaRequestStatus = typeof mediaRequests.$inferSelect["status"];
+export type MediaType = typeof mediaRequests.$inferSelect["mediaType"];
+export type DigitalRequestStatus = typeof digitalRequests.$inferSelect["status"];
+export type DigitalServiceType = typeof digitalRequests.$inferSelect["serviceType"];
+export type DigitalFormStatus = typeof digitalForms.$inferSelect["status"];
+export type CertificateBatchStatus = typeof certificateBatches.$inferSelect["status"];
+export type AssetCondition = typeof assets.$inferSelect["condition"];
+export type AssetAvailability = typeof assets.$inferSelect["availability"];
+export type ReservationStatus = typeof assetReservations.$inferSelect["status"];
+export type IncidentKind = typeof assetIncidents.$inferSelect["kind"];
+
+// ========================
+// End Phase 6 Type Exports
+// ========================

@@ -1,7 +1,7 @@
 import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import { submitLogin } from "./auth";
+import { submitLogin, withTransportRetry } from "./auth";
 
 const person = z.object({
   id: z.string(),
@@ -266,7 +266,9 @@ async function login(page: Page, key: Actor) {
 }
 
 async function get(page: Page, path: string): Promise<unknown> {
-  const response = await page.request.get(`/api/governance/${path}`);
+  const response = await withTransportRetry(() =>
+    page.request.get(`/api/governance/${path}`),
+  );
   expect(response.status()).toBe(200);
   expect(response.headers()["cache-control"]).toBe("private, no-store");
   return response.json();
@@ -278,10 +280,9 @@ async function post(
   data: unknown,
   status = 200,
 ): Promise<unknown> {
-  const response = await page.request.post(`/api/governance/${path}`, {
-    headers,
-    data,
-  });
+  const response = await withTransportRetry(() =>
+    page.request.post(`/api/governance/${path}`, { headers, data }),
+  );
   expect(response.status()).toBe(status);
   return response.json();
 }

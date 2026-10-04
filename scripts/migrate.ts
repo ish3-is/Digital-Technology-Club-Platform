@@ -36,7 +36,9 @@ await db.transaction(async (tx) => {
   }
 });
 await seedEventConfiguration();
+const { seedPeopleConfiguration } = await import("../src/lib/people/contribution.service");
+await seedPeopleConfiguration();
 console.log(
-  "اكتملت الهجرات وتهيئة الأدوار. لم تُنشأ حسابات أو بيانات تجريبية.",
+  "اكتملت الهجرات وتهيئة الأدوار وقواعد المساهمة. لم تُنشأ حسابات أو بيانات تجريبية.",
 );
 process.exit(0);

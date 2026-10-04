@@ -24,6 +24,9 @@ import {
   ShieldCheck,
   Plus,
   Bell,
+  UserRound,
+  Building2,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { Brand } from "./brand";
 import { authClient } from "./auth-form";
@@ -34,6 +37,9 @@ export const navigation = [
   { href: "/work", label: "العمل", icon: Layers3 },
   { href: "/events", label: "الفعاليات", icon: CalendarDays },
   { href: "/committees", label: "اللجان", icon: Users },
+  { href: "/people", label: "الناس", icon: UserRound },
+  { href: "/intelligence", label: "الاستخبارات", icon: ChartNoAxesCombined },
+  { href: "/operations", label: "العمليات", icon: Building2 },
   { href: "/club", label: "النادي", icon: Landmark },
   { href: "/achievements", label: "الإنجازات", icon: Award },
   { href: "/knowledge", label: "المعرفة", icon: BookOpen },
