@@ -1,4 +1,5 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
+import path from "node:path";
 
 /**
  * Static security headers.
@@ -14,9 +15,19 @@ const config: NextConfig = {
   distDir: process.env.CLUB_E2E === "1" ? ".next-e2e" : ".next",
   devIndicators: false,
   serverExternalPackages: ["@electric-sql/pglite", "pg", "nodemailer"],
-  // A standalone server image keeps the runtime dependency surface small.
+
   output: "standalone",
   poweredByHeader: false,
+
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@": path.resolve(process.cwd(), "src"),
+    };
+
+    return config;
+  },
+
   async headers() {
     return [
       {
@@ -29,7 +40,6 @@ const config: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(), payment=()",
           },
-          // Only meaningful over HTTPS, and only in production.
           ...(isProduction
             ? [
                 {
@@ -44,4 +54,5 @@ const config: NextConfig = {
     ];
   },
 };
+
 export default config;
