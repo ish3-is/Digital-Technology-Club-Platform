@@ -813,9 +813,10 @@ const workSpec: {
     dayOffset: 5,
   },
 ];
-
+console.log("4/10 بدء إنشاء المهام والطلبات والاجتماعات...");
 const workIds = new Map<string, string>();
 for (const w of workSpec) {
+  console.log(`  [WORK] ${w.kind}: ${w.title}`);
   // The engine owns the work id, so idempotency keys on (title, creator, term)
   // and the reset identifies demo work by its demo creator.
   const [already] = await db
@@ -876,10 +877,13 @@ for (const w of workSpec) {
   }
 }
 log(`أعمال: ${workSpec.length}`);
+console.log("4/10 اكتملت الأعمال");
+console.log("5/10 بدء إنشاء الفعاليات...");
 
 // 5. Events -------------------------------------------------------------
 const eventIds = new Map<string, string>();
 for (const a of demoActivities) {
+  console.log(`  [EVENT] ${a.title}`);
   const [already] = await db
     .select({ id: s.workItems.id })
     .from(s.workItems)
@@ -953,6 +957,8 @@ for (const a of demoActivities) {
   }
 }
 log(`فعاليات: ${demoActivities.length}`);
+console.log("5/10 اكتملت الفعاليات");
+console.log("6/10 بدء الحضور...");
 
 // 6. Attendance for completed events -------------------------------------
 for (const a of demoActivities.filter((x) => x.completed)) {
@@ -990,7 +996,7 @@ for (const a of demoActivities.filter((x) => x.completed)) {
   );
 }
 log("حضور: عينات تجريبية للفعاليات المكتملة");
-
+console.log("7/10 بدء الحوكمة...");
 // 7. Governance: goals, initiatives, KPIs, evidence -----------------------
 // Club leadership holds the governance permissions; committee heads do not
 // create club-wide goals, so the leader creates them scoped to each committee.
@@ -1116,7 +1122,7 @@ for (const k of kpis) {
     });
 }
 log(`حوكمة: ${goals.length} أهداف، ${kpis.length} مؤشرات مع قياسات`);
-
+console.log("8/10 بدء دورة حياة الأعضاء...");
 // 8. People lifecycle ---------------------------------------------------
 const memberUser = uid("digital-m1");
 // The applicant acts for themself when submitting their own application.
@@ -1232,7 +1238,7 @@ for (const v of volunteerHours) {
     .where(eq(s.volunteerHourEntries.id, entry.id));
 }
 log(`ساعات تطوعية: ${volunteerHours.length}`);
-
+console.log("9/10 بدء العمليات التخصصية...");
 // 9. Phase 6 specialized operations --------------------------------------
 // Runs last so the demo term, committees, people and events all exist and the
 // operations records can link to them by their real ids.
@@ -1248,7 +1254,7 @@ log(`ساعات تطوعية: ${volunteerHours.length}`);
     log,
   });
 }
-
+console.log("10/10 اكتمل Seed التجريبي");
 // 10. Demo marker + summary ---------------------------------------------
 console.log(`
 تم بذر بيانات العرض التجريبي.
