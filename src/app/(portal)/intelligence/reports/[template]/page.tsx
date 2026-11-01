@@ -38,7 +38,7 @@ export default async function Page({
     >
       {printable ? (
         <div className="intel-print-page">
-          <p className="intel-print-links no-print">
+          <div className="intel-print-links no-print">
             <a href={`/api/intelligence/report/${template}?range=${q.range ?? "term"}&format=csv`}>
               تصدير CSV
             </a>{" "}
@@ -54,7 +54,7 @@ export default async function Page({
                 />
               </>
             )}
-          </p>
+          </div>
           <ReportPrintView report={JSON.parse(JSON.stringify(report))} />
         </div>
       ) : (

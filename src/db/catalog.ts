@@ -1,5 +1,6 @@
 export const permissionCatalog: Record<string, string> = {
   "organization.manage": "إدارة التنظيم",
+  "committee.form": "تشكيل اللجان وتعيين أعضائها ومعتمديها",
   "committee.read": "قراءة مساحة اللجنة",
   "committee.update": "تعديل نبذة اللجنة",
   "report.review": "مراجعة التقارير",
@@ -279,6 +280,8 @@ for (const role of Object.values(roleCatalog)) {
 
 roleCatalog.supervisor.permissions.push("goal.view", "initiative.view");
 for (const id of ["president", "vice_president"]) roleCatalog[id].permissions.push("club.executive");
+for (const id of ["president", "vice_president"])
+  roleCatalog[id].permissions.push("committee.form");
 
 // ========================
 // Phase 6: Specialized Committee Operations

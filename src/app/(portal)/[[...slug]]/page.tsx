@@ -29,7 +29,32 @@ import { EventCenter } from "@/components/event-center";
 import { listEvents, eventDetail, eventOptions } from "@/lib/events/queries";
 import { governanceInbox } from "@/lib/governance/queries";
 import { SupervisorBrief } from "@/components/supervisor-brief";
+import {
+  ClubPulseDashboard,
+  type CommitteePulse,
+  type MonthlyRecognition,
+} from "@/components/club-pulse-dashboard";
+import { OnlineMembersPanel } from "@/components/presence";
+import {
+  ManagementDashboard,
+  type ManagementDashboardData,
+} from "@/components/management-dashboard";
+import {
+  canViewManagementDashboard,
+  managementDashboard,
+} from "@/lib/management-dashboard";
+import { CommitteeFormation } from "@/components/committee-formation";
+import { committeeFormationOptions } from "@/lib/committees";
 export const dynamic = "force-dynamic";
+
+function riyadhMonthKey(value: Date | string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Riyadh",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date(value));
+  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}`;
+}
 function Empty({
   icon: Icon = Inbox,
   title,
@@ -79,10 +104,105 @@ export default async function Page({
     redirect("/login");
   });
   const data = await foundation(ctx);
+  const demoData = data.terms.some((term) => term.id === "demo-term");
+  const fullPulseScope =
+    permits(ctx.grants, "task.read") && permits(ctx.grants, "committee.read");
   const section = slug[0] || "home";
   const query = await searchParams;
   const actions = await inbox(ctx);
   const homeWork = section === "home" ? await listWork(ctx) : [];
+  const managementData =
+    section === "home" && canViewManagementDashboard(ctx)
+      ? await managementDashboard(ctx, homeWork, data.committees)
+      : null;
+  const committeePulse: CommitteePulse[] = data.committees
+    .map((committee) => {
+      const rows = homeWork.filter(
+        (work) =>
+          work.committeeId === committee.id &&
+          ["task", "request"].includes(work.kind),
+      );
+      return {
+      id: committee.id,
+      name: committee.name,
+        open: rows.filter(
+          (work) =>
+            !["completed", "cancelled", "rejected"].includes(work.status),
+        ).length,
+        completed: rows.filter((work) => work.status === "completed").length,
+        review: rows.filter((work) => work.status === "review").length,
+        overdue: rows.filter((work) => work.overdue).length,
+        total: rows.length,
+      };
+    })
+    .filter((row) => row.total > 0);
+  const monthKey = riyadhMonthKey(new Date());
+  const completedThisMonth = homeWork.filter(
+    (work) =>
+      ["task", "request"].includes(work.kind) &&
+      work.status === "completed" &&
+      work.completedAt &&
+      riyadhMonthKey(work.completedAt) === monthKey,
+  );
+  let memberStar: MonthlyRecognition = null;
+  let committeeStar: MonthlyRecognition = null;
+  if (fullPulseScope && completedThisMonth.length) {
+    const memberCounts = new Map<
+      string,
+      { name: string; count: number; committee: string }
+    >();
+    for (const work of completedThisMonth) {
+      const committee =
+        data.committees.find((item) => item.id === work.committeeId)?.name ??
+        "على مستوى النادي";
+      for (const owner of work.assignments.filter(
+        (assignment) => assignment.role === "responsible",
+      )) {
+        const current = memberCounts.get(owner.userId);
+        memberCounts.set(owner.userId, {
+          name: owner.name,
+          count: (current?.count ?? 0) + 1,
+          committee,
+        });
+      }
+    }
+    const member = [...memberCounts.values()].sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name, "ar"),
+    )[0];
+    if (member)
+      memberStar = {
+        name: member.name,
+        count: member.count,
+        detail: member.committee,
+      };
+
+    const committeeCounts = new Map<string, number>();
+    for (const work of completedThisMonth)
+      if (work.committeeId)
+        committeeCounts.set(
+          work.committeeId,
+          (committeeCounts.get(work.committeeId) ?? 0) + 1,
+        );
+    const committee = [...committeeCounts.entries()]
+      .map(([id, count]) => ({
+        name: data.committees.find((item) => item.id === id)?.name ?? id,
+        count,
+      }))
+      .sort(
+        (a, b) => b.count - a.count || a.name.localeCompare(b.name, "ar"),
+      )[0];
+    if (committee)
+      committeeStar = {
+        name: committee.name,
+        count: committee.count,
+        detail: "إشادة بالإنجاز الموثق خلال الشهر",
+      };
+  }
+  const monthLabel = new Date().toLocaleDateString("ar-SA", {
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Riyadh",
+  });
   const upcomingMeetings = homeWork
     .filter(
       (w) =>
@@ -118,7 +238,7 @@ export default async function Page({
       title: a.title,
       action: a.action,
       href: a.href,
-      bucket: "الناس",
+      bucket: "الأعضاء",
     })),
   ];
   let content: React.ReactNode;
@@ -198,6 +318,19 @@ export default async function Page({
             افتح صندوق الوارد <ArrowLeft size={17} />
           </Link>
         </div>
+        <ClubPulseDashboard
+          rows={committeePulse}
+          memberStar={memberStar}
+          committeeStar={committeeStar}
+          month={monthLabel}
+          demo={demoData}
+          fullScope={fullPulseScope}
+        />
+        {managementData && (
+          <ManagementDashboard
+            data={managementData as ManagementDashboardData}
+          />
+        )}
         <div className="home-grid">
           <div className="home-primary">
             <section className="today-panel panel">
@@ -282,32 +415,7 @@ export default async function Page({
             </div>
           </div>
           <aside className="home-secondary">
-            <section className="pulse panel">
-              <div className="section-title">
-                <h2>
-                  <span className="pulse-mark" /> نبض النادي
-                </h2>
-              </div>
-              <p className="muted">صورة واضحة، من بيانات حقيقية.</p>
-              <div className="pulse-empty">
-                <CircleDashed size={32} />
-                <h3>{homeWork.filter((w) => w.overdue).length} أعمال متأخرة</h3>
-                <p>
-                  {homeWork.filter((w) => w.status === "review").length} بانتظار
-                  المراجعة ·{" "}
-                  {homeWork.filter((w) => w.status === "completed").length}{" "}
-                  مكتملة
-                </p>
-              </div>
-              <details>
-                <summary>كيف يُقرأ نبض النادي؟</summary>
-                <p>
-                  الأعداد من الأعمال المتاحة لصلاحياتك. يتأخر العمل عند تجاوز
-                  موعده وهو غير مكتمل أو ملغى؛ المراجعات تنتظر قرار المراجع
-                  المحدد.
-                </p>
-              </details>
-            </section>
+            <OnlineMembersPanel />
             <section className="panel upcoming">
               <h2>على الأفق</h2>
               {upcomingMeetings.length ? (
@@ -344,7 +452,7 @@ export default async function Page({
                 <Users size={20} />
                 <div>
                   <strong>مساحات اللجان</strong>
-                  <small>الناس الذين تصنع معهم الفرق</small>
+                  <small>الأعضاء الذين تصنع معهم الفرق</small>
                 </div>
                 <ArrowLeft size={17} />
               </Link>
@@ -406,6 +514,9 @@ export default async function Page({
     );
   else if (section === "committees" && slug[1]) {
     const c = await committee(ctx, slug[1]).catch(() => notFound());
+    const formationOptions = permits(ctx.grants, "committee.form")
+      ? await committeeFormationOptions(ctx, c.id)
+      : null;
     content = (
       <>
         <Heading
@@ -413,6 +524,17 @@ export default async function Page({
           title={c.name}
           body="سياق واحد للفريق والعمل والمعرفة."
         />
+        {formationOptions && (
+          <div className="committee-formation-action">
+            <CommitteeFormation
+              people={formationOptions.people}
+              approvers={formationOptions.approvers}
+              termName={formationOptions.term.name}
+              committee={c}
+              formation={formationOptions.formation}
+            />
+          </div>
+        )}
         {permits(ctx.grants, "committee.update", { committeeId: c.id }) ? (
           <section className="panel">
             <h2>عن اللجنة</h2>
@@ -448,13 +570,26 @@ export default async function Page({
       </>
     );
   } else if (section === "committees")
-    content = (
+    content = await (async () => {
+      const formationOptions = permits(ctx.grants, "committee.form")
+        ? await committeeFormationOptions(ctx)
+        : null;
+      return (
       <>
-        <Heading
-          label="فرق تصنع الأثر"
-          title="اللجان"
-          body="مساحات الفرق التي يمكنك الوصول إليها بحسب دورك ونطاقه."
-        />
+        <div className="committee-index-heading">
+          <Heading
+            label="فرق تصنع الأثر"
+            title="اللجان"
+            body="مساحات الفرق التي يمكنك الوصول إليها بحسب دورك ونطاقه."
+          />
+          {formationOptions && (
+            <CommitteeFormation
+              people={formationOptions.people}
+              approvers={formationOptions.approvers}
+              termName={formationOptions.term.name}
+            />
+          )}
+        </div>
         {data.committees.length ? (
           <div className="committee-grid">
             {data.committees.map((c) => (
@@ -482,7 +617,8 @@ export default async function Page({
           </section>
         )}
       </>
-    );
+      );
+    })();
   else if (section === "profile")
     content = (
       <>
@@ -687,7 +823,7 @@ export default async function Page({
       admin={data.admin}
       supervisor={data.supervisor}
       term={data.terms[0]?.name}
-      demo={process.env.PGLITE_DIR?.startsWith(".data/e2e-")}
+      demo={demoData || process.env.PGLITE_DIR?.startsWith(".data/e2e-")}
       createKinds={createKinds}
       contextCommittee={section === "committees" ? slug[1] : query.committee}
     >

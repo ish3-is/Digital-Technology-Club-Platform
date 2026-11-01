@@ -197,6 +197,11 @@ test("اجتماع وقرار وتحويله إلى مهمة والبحث وال
   let dialog = page.getByRole("dialog");
   const title = `اجتماع متصفح ${Date.now()}`;
   await dialog.getByLabel("العنوان", { exact: true }).fill(title);
+  // The head can belong to more than one committee after the formation flow.
+  // Pin this scenario to its seeded committee before choosing its member.
+  await dialog
+    .getByRole("combobox", { name: "اللجنة والفصل", exact: true })
+    .selectOption({ label: "لجنة تجريبية · الفصل التجريبي" });
   await dialog.getByLabel("البداية بتوقيت الرياض").fill("2027-01-20T10:00");
   await dialog.getByLabel("النهاية بتوقيت الرياض").fill("2027-01-20T11:00");
   await dialog

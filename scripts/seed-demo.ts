@@ -34,6 +34,7 @@ const {
   demoTerm,
   demoCommittees,
   demoPeople,
+  demoMembers,
   demoActivities,
   demoDate,
   DEMO_PASSWORD,
@@ -285,6 +286,7 @@ async function reset() {
     await db
       .delete(s.memberProfiles)
       .where(inArray(s.memberProfiles.userId, demoUsers));
+    await db.delete(s.profiles).where(inArray(s.profiles.userId, demoUsers));
     // The audit log is append-only by design. The reset needs to remove the
     // rows a demo actor produced, so it lifts the guard trigger for exactly
     // this statement and restores it immediately afterwards.
@@ -446,6 +448,56 @@ const uid = (slug: string) => ids.get(slug)!;
 const leader = await access.actorContext(uid("leader"));
 const head = async (slug: string) => access.actorContext(uid(slug));
 
+// The independence guide requires a named owner, deadline, expected output and
+// visible state for every task. Give every listed committee member one
+// realistic practice responsibility without inventing a score or achievement.
+const guideTaskTemplates: Record<
+  string,
+  { title: string; output: string; track: "general" | "media" | "technical" | "organization" }[]
+> = {
+  "demo-c-media": [
+    { title: "إعداد مسودة محتوى أسبوعية", output: "مسودة قابلة للمراجعة ومتوافقة مع الهوية", track: "media" },
+    { title: "توثيق مخرجات فعالية تجريبية", output: "ألبوم منظم مع وصف وتاريخ لكل مادة", track: "media" },
+    { title: "مراجعة جودة مادة إعلامية", output: "قائمة ملاحظات واعتماد النسخة النهائية", track: "media" },
+  ],
+  "demo-c-organization": [
+    { title: "إعداد قائمة جاهزية فعالية", output: "قائمة تجهيز ومسؤول لكل بند", track: "organization" },
+    { title: "تنسيق جدول المتطوعين", output: "جدول مناوبات واضح ومؤكد", track: "organization" },
+    { title: "إعداد ملخص المتابعة الأسبوعي", output: "منجزات وتعثرات وخطة الأسبوع القادم", track: "organization" },
+  ],
+  "demo-c-finance": [
+    { title: "مراجعة مستندات مصروف تجريبي", output: "قائمة تحقق بالمستندات والنواقص", track: "general" },
+    { title: "تحديث سجل الاحتياج المالي", output: "سجل احتياجات موثق دون أرقام فعلية", track: "general" },
+    { title: "إعداد ملخص مالي تجريبي", output: "ملخص للفترة يوضح حالة الوثائق", track: "general" },
+  ],
+  "demo-c-digital": [
+    { title: "فحص نموذج تسجيل تجريبي", output: "نتيجة فحص الحقول والخصوصية والصلاحيات", track: "technical" },
+    { title: "تنظيم أرشيف الملفات الرقمية", output: "هيكل مجلدات وصلاحيات وصول موثقة", track: "technical" },
+  ],
+};
+const guideReviewer: Record<string, string> = {
+  "demo-c-media": "media-head",
+  "demo-c-organization": "org-head",
+  "demo-c-finance": "finance-demo",
+  "demo-c-digital": "digital-head",
+};
+const committeeMemberWork = demoMembers.map((person, index) => {
+  const templates = guideTaskTemplates[person.committeeId!];
+  const template = templates[index % templates.length];
+  return {
+    id: `guide-${person.slug}`,
+    kind: "task" as const,
+    title: `${template.title} — ${person.name}`,
+    description: `مهمة عرض تجريبية مستندة إلى دليل استقلالية اللجان. المخرج المتوقع: ${template.output}.`,
+    track: template.track,
+    committeeId: person.committeeId!,
+    responsible: person.slug,
+    reviewer: guideReviewer[person.committeeId!],
+    dayOffset: 7 + (index % 18),
+    target: index % 4 === 0 ? ("in_progress" as const) : undefined,
+  };
+});
+
 const workSpec: {
   id: string;
   kind: "task" | "request" | "meeting";
@@ -455,10 +507,12 @@ const workSpec: {
   responsible: string;
   reviewer?: string;
   receivingCommitteeId?: string;
+  description?: string;
   dayOffset: number;
   /** Target status to drive the item to after creation. */
   target?: "in_progress" | "review" | "completed" | "held" | "received";
 }[] = [
+  ...committeeMemberWork,
   // Organization readiness
   {
     id: "t-venue",
@@ -510,7 +564,7 @@ const workSpec: {
     title: "إصدار الشهادات",
     track: "technical",
     committeeId: "demo-c-digital",
-    responsible: "digital-m2",
+    responsible: "digital-m1",
     reviewer: "digital-head",
     dayOffset: -73,
     target: "completed",
@@ -676,7 +730,7 @@ const workSpec: {
     title: "تجهيز روابط الورشة",
     track: "technical",
     committeeId: "demo-c-digital",
-    responsible: "digital-m2",
+    responsible: "digital-m1",
     reviewer: "digital-head",
     dayOffset: 17,
   },
@@ -716,7 +770,7 @@ const workSpec: {
     title: "تجهيز ملف عرض البرمجة للجميع",
     track: "technical",
     committeeId: "demo-c-digital",
-    responsible: "digital-m3",
+    responsible: "digital-m1",
     reviewer: "digital-head",
     dayOffset: 32,
   },
@@ -836,7 +890,7 @@ for (const w of workSpec) {
   const created = await workEngine.createWork(leader, {
     kind: w.kind,
     title: w.title,
-    description: "سجل عرض تجريبي — بيانات غير رسمية.",
+    description: w.description ?? "سجل عرض تجريبي — بيانات غير رسمية.",
     committeeId: w.committeeId,
     termId: demoTerm.id,
     track: w.track,
@@ -1134,7 +1188,7 @@ const [existingApplication] = await db
 if (!existingApplication) {
   log("طلب انضمام تجريبي");
   const applicant = await people.createApplication(memberActor, {
-    fullName: "عضو رقمي تجريبي ١",
+    fullName: "براء",
     studentId: "demo-0001",
     email: demoEmail("digital-m1"),
     skills: ["برمجة", "تصميم"],
@@ -1177,7 +1231,9 @@ if (!existingApplication) {
   await seedFunnelProgression({
     members: {
       firstTask: "digital-m1",
-      thirtyDay: "digital-m2",
+      // The supplied digital committee has one ordinary member. Reuse that
+      // same real demo member for the later stage instead of inventing another.
+      thirtyDay: "digital-m1",
       // No ladder member: the demo events sit at `idea`, where attendance is
       // closed, so this stage cannot be shown without moving shared demo state.
       firstEvent: "",
@@ -1202,7 +1258,7 @@ const volunteerHours = [
   { slug: "vh-2", member: "media-m1", hours: 5, offset: -70 },
   { slug: "vh-3", member: "org-m1", hours: 6, offset: -50 },
   { slug: "vh-4", member: "org-m2", hours: 3, offset: -48 },
-  { slug: "vh-5", member: "digital-m2", hours: 8, offset: -28 },
+  { slug: "vh-5", member: "digital-head", hours: 8, offset: -28 },
   { slug: "vh-6", member: "media-m2", hours: 7, offset: -27 },
   { slug: "vh-7", member: "org-m3", hours: 2, offset: -20 },
 ];

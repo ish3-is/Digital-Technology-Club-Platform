@@ -249,7 +249,7 @@ export async function peopleListsSafe(
   } catch (e) {
     return {
       lists: emptyPeopleLists(),
-      error: e instanceof HttpError ? e.message : "تعذر تحميل بيانات مساحة الناس",
+      error: e instanceof HttpError ? e.message : "تعذر تحميل بيانات مساحة الأعضاء",
     };
   }
 }

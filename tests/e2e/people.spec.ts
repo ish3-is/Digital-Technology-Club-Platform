@@ -79,7 +79,7 @@ async function post(page: Page, path: string, data: unknown, status = 200) {
 
 const uniqueSuffix = () => Math.floor(Math.random() * 100000);
 
-test("SCENARIO A — الطلب يُراجع ويُقبل ويتحوّل إلى عضو في دليل الناس", async ({
+test("SCENARIO A — الطلب يُراجع ويُقبل ويتحوّل إلى عضو في دليل الأعضاء", async ({
   page,
 }) => {
   await login(page, "member");
@@ -147,7 +147,9 @@ test("SCENARIO A — الطلب يُراجع ويُقبل ويتحوّل إلى 
 
   // The member now appears in the directory under their account identity.
   await page.goto("/people?tab=members");
-  await expect(page.getByRole("heading", { name: "الأعضاء" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "الأعضاء", exact: true }),
+  ).toBeVisible();
   // The directory is scoped and keyed on the account, not the application name.
   await expect(page.getByRole("heading", { name: "مقدم طلب للاختبار" })).toHaveCount(0);
   const listed = await get(page, "lists");

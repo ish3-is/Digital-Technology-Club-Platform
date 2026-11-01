@@ -1172,7 +1172,7 @@ function CreateDialog({
         c.termId === chosen?.termId && c.committeeId === chosen?.committeeId,
     ),
   );
-  const reviewers = people.filter((p) =>
+  const eligibleReviewers = people.filter((p) =>
     p.scopes.some(
       (c) =>
         c.termId === chosen?.termId &&
@@ -1183,6 +1183,11 @@ function CreateDialog({
         ),
     ),
   );
+  const reviewers = chosen?.approverIds.length
+    ? eligibleReviewers.filter((person) =>
+        chosen.approverIds.includes(person.id),
+      )
+    : eligibleReviewers;
   return (
     <Dialog.Root
       open={!!kind}
@@ -1375,6 +1380,9 @@ function CreateDialog({
                         {reviewers.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name}
+                            {chosen.approverIds.includes(p.id)
+                              ? " · معتمد اللجنة"
+                              : ""}
                           </option>
                         ))}
                       </select>
@@ -1415,6 +1423,9 @@ function CreateDialog({
                       {reviewers.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
+                          {chosen.approverIds.includes(p.id)
+                            ? " · معتمد اللجنة"
+                            : ""}
                         </option>
                       ))}
                     </select>

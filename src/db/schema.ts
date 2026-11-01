@@ -101,6 +101,35 @@ export const committees = pgTable("committees", {
   description: text("description").notNull().default(""),
   active: boolean("active").notNull().default(true),
 });
+export const committeeApprovers = pgTable(
+  "committee_approvers",
+  {
+    committeeId: text("committee_id")
+      .notNull()
+      .references(() => committees.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    assignedBy: text("assigned_by")
+      .notNull()
+      .references(() => user.id),
+    createdAt: time("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.committeeId, t.userId] }),
+    index("committee_approvers_user_idx").on(t.userId),
+  ],
+);
+export const userPresence = pgTable(
+  "user_presence",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    lastSeenAt: time("last_seen_at").notNull().defaultNow(),
+  },
+  (t) => [index("user_presence_seen_idx").on(t.lastSeenAt)],
+);
 export const roles = pgTable("roles", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

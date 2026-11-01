@@ -98,6 +98,12 @@ export async function workOptions(ctx: Identity) {
     .select({ id: s.committees.id, name: s.committees.name })
     .from(s.committees)
     .where(eq(s.committees.active, true));
+  const configuredApprovers = await db
+    .select({
+      committeeId: s.committeeApprovers.committeeId,
+      userId: s.committeeApprovers.userId,
+    })
+    .from(s.committeeApprovers);
   const contexts = terms.flatMap((t) =>
     [
       ...committees.map((c) => ({
@@ -105,12 +111,16 @@ export async function workOptions(ctx: Identity) {
         committeeName: c.name,
         termId: t.id,
         termName: t.name,
+        approverIds: configuredApprovers
+          .filter((row) => row.committeeId === c.id)
+          .map((row) => row.userId),
       })),
       {
         committeeId: null,
         committeeName: "عمل على مستوى النادي",
         termId: t.id,
         termName: t.name,
+        approverIds: [] as string[],
       },
     ]
       .map((c) => ({

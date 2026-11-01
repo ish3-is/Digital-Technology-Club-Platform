@@ -1,7 +1,23 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import "@fontsource-variable/noto-sans-arabic";
+import localFont from "next/font/local";
 import "./globals.css";
+
+const camelDisplay = localFont({
+  src: "./fonts/the-year-of-the-camel-extra-bold.otf",
+  weight: "800",
+  style: "normal",
+  display: "swap",
+  variable: "--font-camel-display",
+});
+
+const camelText = localFont({
+  src: "./fonts/the-year-of-the-camel-extra-light.otf",
+  weight: "200",
+  style: "normal",
+  display: "swap",
+  variable: "--font-camel-text",
+});
 export const metadata: Metadata = {
   title: "المقر الرقمي | نادي التقنية الرقمية",
   description: "المقر الرقمي لنادي التقنية الرقمية — جامعة الملك خالد",
@@ -17,7 +33,12 @@ export default async function Layout({
   // The attribute is omitted entirely when no nonce is present, so the server
   // and client render the same markup.
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning>
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${camelDisplay.variable} ${camelText.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           nonce={nonce}

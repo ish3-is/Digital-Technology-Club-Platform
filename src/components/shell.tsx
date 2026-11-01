@@ -29,15 +29,17 @@ import {
   ChartNoAxesCombined,
 } from "lucide-react";
 import { Brand } from "./brand";
+import { MadarMark } from "./madar-mark";
 import { authClient } from "./auth-form";
 import { kindLabels, type Kind } from "@/lib/work/model";
+import { PresenceTracker } from "./presence";
 export const navigation = [
   { href: "/", label: "الرئيسية", icon: House },
   { href: "/inbox", label: "صندوق الوارد", icon: Inbox },
   { href: "/work", label: "العمل", icon: Layers3 },
   { href: "/events", label: "الفعاليات", icon: CalendarDays },
   { href: "/committees", label: "اللجان", icon: Users },
-  { href: "/people", label: "الناس", icon: UserRound },
+  { href: "/people", label: "الأعضاء", icon: UserRound },
   { href: "/intelligence", label: "الاستخبارات", icon: ChartNoAxesCombined },
   { href: "/operations", label: "العمليات", icon: Building2 },
   { href: "/club", label: "النادي", icon: Landmark },
@@ -138,6 +140,7 @@ export function Shell({
     href === "/" ? path === "/" : path.startsWith(href);
   return (
     <div className="app-layout" inert={!ready} aria-busy={!ready}>
+      <PresenceTracker />
       <aside className="sidebar">
         <Link href="/" className="brand-link">
           <Brand />
@@ -256,7 +259,8 @@ export function Shell({
         </main>
         <footer className="app-footer">
           <span>نادي التقنية الرقمية — جامعة الملك خالد</span>
-          <span>نعمل معًا. ونصنع الفرق.</span>
+          <span>جميع الحقوق محفوظة · نعمل معًا ونصنع الفرق</span>
+          <MadarMark compact />
         </footer>
       </div>
       <nav className="mobile-nav" aria-label="التنقل على الجوال">

@@ -228,7 +228,7 @@ export async function assignReviewer(
       tx,
       reviewerId,
       "طلب انضمام ينتظر مراجعتك",
-      "أُسند إليك طلب جديد للمراجعة في مساحة الناس.",
+      "أُسند إليك طلب جديد للمراجعة في مساحة الأعضاء.",
     );
     return { ...row, status: nextStatus };
   });

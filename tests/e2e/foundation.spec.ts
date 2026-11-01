@@ -7,6 +7,11 @@ const credentials = JSON.parse(
 test("الدخول والتهيئة والنطاق والجوال والثيم والخروج", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/login/);
+  await expect(page.getByText("إحدى أعمال")).toBeVisible();
+  await page.getByRole("link", { name: "طلب إضافة حساب" }).click();
+  await expect(page.getByRole("heading", { name: "طلب إضافة حساب" })).toBeVisible();
+  await expect(page.getByText("يضيف مسؤول النادي حسابك ودورك واللجنة التابعة لك.")).toBeVisible();
+  await page.getByRole("link", { name: "العودة إلى تسجيل الدخول" }).click();
   await page.screenshot({
     path: "test-results/login-desktop.png",
     fullPage: true,
@@ -26,6 +31,19 @@ test("الدخول والتهيئة والنطاق والجوال والثيم �
   await expect(
     page.getByRole("heading", { name: /السلام عليكم/ }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "نبض النادي" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "المتصلون الآن" })).toBeVisible();
+  const onlineMembers = page.getByRole("list", { name: "أسماء المتصلين الآن" });
+  await expect(onlineMembers).toBeVisible();
+  await expect(onlineMembers.getByRole("listitem").first()).toContainText(/\S+/);
+  const donutTab = page.getByRole("tab", { name: "دائرة" });
+  await donutTab.click();
+  await expect(donutTab).toHaveAttribute("aria-selected", "true");
+  const columnsTab = page.getByRole("tab", { name: "أعمدة" });
+  await columnsTab.click();
+  await expect(columnsTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText(/نجم الشهر/)).toBeVisible();
+  await expect(page.getByText(/لجنة الشهر/)).toBeVisible();
   await page.screenshot({
     path: "test-results/home-desktop.png",
     fullPage: true,
@@ -39,10 +57,11 @@ test("الدخول والتهيئة والنطاق والجوال والثيم �
     page.getByRole("heading", { name: "هذه المساحة غير متاحة" }),
   ).toBeVisible();
   await page.goto("/");
-  await page.keyboard.press("Control+k");
+  await page.getByRole("button", { name: "البحث والتنقل" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByLabel("البحث في المقر").fill("اللجان");
   await page.getByRole("dialog").getByRole("link", { name: "اللجان", exact: true }).click();
+  await expect(page.getByRole("button", { name: "تشكيل لجنة جديدة" })).toHaveCount(0);
   await page.getByRole("link", { name: /لجنة تجريبية/ }).click();
   await page.getByLabel("نبذة اللجنة").fill("بيانات تجريبية: تحديث موثق");
   await page.getByRole("button", { name: "حفظ النبذة" }).click();

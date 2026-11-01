@@ -4,8 +4,8 @@
  * كل معرّف هنا يبدأ بـ `demo-` وبريده `demo-<name>@club.local`، وهو ما يجعل
  * السجلات قابلة للتعرّف والحذف الآمن دون لمس أي بيانات حقيقية.
  *
- * لا يحتوي هذا الملف على أي بيانات شخصية حقيقية: الأسماء المذكورة أعلاه هي
- * أدوار قيادية provided من إدارة النادي، وأي عضو إضافي يحمل بادئة «تجريبي».
+ * الأسماء في هذا الملف مأخوذة من القائمة التي زودت بها إدارة النادي هذا
+ * المشروع. الحسابات محلية تجريبية فقط ولا تستخدم بريد الأعضاء أو أرقامهم.
  */
 
 /** بادئة كل معرّف يكتبه هذا الملف. لا تستخدمها في أي مكان آخر. */
@@ -45,37 +45,61 @@ export const demoCommittees: DemoCommittee[] = [
     id: "demo-c-digital",
     name: "اللجنة الرقمية",
     description: "النماذج والروابط والشهادات والدعم التقني للفعاليات.",
-    head: "مشعل",
-    deputy: "البراء",
-    members: ["عضو رقمي تجريبي ١", "عضو رقمي تجريبي ٢", "عضو رقمي تجريبي ٣"],
+    head: "مشعل جذمي",
+    members: ["براء"],
   },
   {
     id: "demo-c-organization",
     name: "اللجنة التنظيمية",
     description: "التجهيز واللوجستيات والحضور وتنسيق المتطوعين.",
     head: "محمد آل ملحة",
-    deputy: "غلا",
+    deputy: "لمى القحطاني",
     members: [
-      "عضو تنظيمي تجريبي ١",
-      "عضو تنظيمي تجريبي ٢",
-      "عضو تنظيمي تجريبي ٣",
+      "محمد زياد محمد الشريف",
+      "سما علي محمد الشهري",
+      "رانيا بنت يحيى بن أحمد آل مداوي عسيري",
+      "زايد عمر أحمد",
+      "لمى محمد ذبيان",
+      "أسيل شيلي حسن عايض الشهري",
+      "سالم سعيد سالم آل حميد الشهراني",
+      "عبدالله منصور بن عبدالله الشهراني",
+      "أسماء جابر يحيى الحريصي",
+      "حاتم بن محمد يحيى العسيري",
+      "نهى بنت سعيد بن حسن آل حيدر",
+      "رغد خالد الشاويش",
+      "محمد عوض عثمان الشهري",
+      "عبير إبراهيم حسن حمدي",
+      "فاطمة بنت سعيد بن جابر القحطاني",
+      "رانيا عبدالرحمن غرمان آل غرمان العمري",
+      "طلال حسين سعيد آل ناجي القحطاني",
+      "وعد بنت علي بن يحيى شراحيلي",
     ],
   },
   {
     id: "demo-c-media",
     name: "اللجنة الإعلامية",
     description: "التصميم والإعلانات والتغطية والبث والأرشفة.",
-    head: "عبدالرحمن",
-    deputy: "سارة",
-    members: ["عضو إعلامي تجريبي ١", "عضو إعلامي تجريبي ٢"],
+    head: "عبدالرحمن عسيري",
+    deputy: "سارة الأسمري",
+    members: [
+      "فهد عبدالله آل دهمان",
+      "ريما",
+      "فراس عبدالله الصائغ",
+      "ود صالح القحطاني",
+      "دانة باسم آل محفوظ",
+      "البراء ياسر علي أحمد",
+      "غلا علي سعيد القحطاني",
+      "أنس عبدالله محمد عسيري",
+      "مها علي سعد القحطاني",
+      "أسماء علي يحيى الفيفي",
+    ],
   },
   {
     id: "demo-c-finance",
     name: "اللجنة المالية",
     description: "الميزانيات والمصروفات والوثائق المالية. الوصول محدود.",
-    // No real leadership names were supplied for finance; this is a dev-only actor.
-    head: "مسؤول مالي تجريبي",
-    members: ["عضو مالي تجريبي ١"],
+    head: "سامر القرني",
+    members: ["باسل حمدان الشهري", "محمد سعيد سيرة الشهراني", "ياسر إبراهيم"],
   },
 ];
 
@@ -94,31 +118,54 @@ export type DemoPerson = {
  */
 export const demoLeadership: DemoPerson[] = [
   { slug: "supervisor", name: "د. عبدالمنعم الشهراني", roleId: "supervisor", clubWide: true },
-  { slug: "leader", name: "إياد", roleId: "president", clubWide: true },
-  { slug: "deputy-leader", name: "رغد", roleId: "vice_president", clubWide: true },
-  { slug: "section-head", name: "محمد عمار", roleId: "male_section_lead", clubWide: true },
+  { slug: "leader", name: "إياد القحطاني", roleId: "president", clubWide: true },
+  { slug: "deputy-leader", name: "رغد مدخلي", roleId: "vice_president", clubWide: true },
+  { slug: "section-head", name: "عمار محمد", roleId: "male_section_lead", clubWide: true },
+  { slug: "female-section-head", name: "ريوف القحطاني", roleId: "female_section_lead", clubWide: true },
 ];
 
 export const demoCommitteePeople: DemoPerson[] = [
-  { slug: "digital-head", name: "مشعل", roleId: "committee_head", committeeId: "demo-c-digital" },
-  { slug: "digital-deputy", name: "البراء", roleId: "deputy_head", committeeId: "demo-c-digital" },
+  { slug: "digital-head", name: "مشعل جذمي", roleId: "committee_head", committeeId: "demo-c-digital" },
   { slug: "org-head", name: "محمد آل ملحة", roleId: "committee_head", committeeId: "demo-c-organization" },
-  { slug: "org-deputy", name: "غلا", roleId: "deputy_head", committeeId: "demo-c-organization" },
-  { slug: "media-head", name: "عبدالرحمن", roleId: "committee_head", committeeId: "demo-c-media" },
-  { slug: "media-deputy", name: "سارة", roleId: "deputy_head", committeeId: "demo-c-media" },
-  { slug: "finance-demo", name: "مسؤول مالي تجريبي", roleId: "committee_head", committeeId: "demo-c-finance" },
+  { slug: "org-deputy", name: "لمى القحطاني", roleId: "deputy_head", committeeId: "demo-c-organization" },
+  { slug: "media-head", name: "عبدالرحمن عسيري", roleId: "committee_head", committeeId: "demo-c-media" },
+  { slug: "media-deputy", name: "سارة الأسمري", roleId: "deputy_head", committeeId: "demo-c-media" },
+  { slug: "finance-demo", name: "سامر القرني", roleId: "committee_head", committeeId: "demo-c-finance" },
 ];
 
 export const demoMembers: DemoPerson[] = [
-  { slug: "digital-m1", name: "عضو رقمي تجريبي ١", roleId: "committee_member", committeeId: "demo-c-digital" },
-  { slug: "digital-m2", name: "عضو رقمي تجريبي ٢", roleId: "committee_member", committeeId: "demo-c-digital" },
-  { slug: "digital-m3", name: "عضو رقمي تجريبي ٣", roleId: "committee_member", committeeId: "demo-c-digital" },
-  { slug: "org-m1", name: "عضو تنظيمي تجريبي ١", roleId: "committee_member", committeeId: "demo-c-organization" },
-  { slug: "org-m2", name: "عضو تنظيمي تجريبي ٢", roleId: "committee_member", committeeId: "demo-c-organization" },
-  { slug: "org-m3", name: "عضو تنظيمي تجريبي ٣", roleId: "committee_member", committeeId: "demo-c-organization" },
-  { slug: "media-m1", name: "عضو إعلامي تجريبي ١", roleId: "committee_member", committeeId: "demo-c-media" },
-  { slug: "media-m2", name: "عضو إعلامي تجريبي ٢", roleId: "committee_member", committeeId: "demo-c-media" },
-  { slug: "finance-m1", name: "عضو مالي تجريبي ١", roleId: "committee_member", committeeId: "demo-c-finance" },
+  { slug: "digital-m1", name: "براء", roleId: "committee_member", committeeId: "demo-c-digital" },
+  { slug: "media-m1", name: "فهد عبدالله آل دهمان", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m2", name: "ريما", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m3", name: "فراس عبدالله الصائغ", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m4", name: "ود صالح القحطاني", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m5", name: "دانة باسم آل محفوظ", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m6", name: "البراء ياسر علي أحمد", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m7", name: "غلا علي سعيد القحطاني", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m8", name: "أنس عبدالله محمد عسيري", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m9", name: "مها علي سعد القحطاني", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "media-m10", name: "أسماء علي يحيى الفيفي", roleId: "committee_member", committeeId: "demo-c-media" },
+  { slug: "org-m1", name: "محمد زياد محمد الشريف", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m2", name: "سما علي محمد الشهري", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m3", name: "رانيا بنت يحيى بن أحمد آل مداوي عسيري", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m4", name: "زايد عمر أحمد", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m5", name: "لمى محمد ذبيان", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m6", name: "أسيل شيلي حسن عايض الشهري", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m7", name: "سالم سعيد سالم آل حميد الشهراني", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m8", name: "عبدالله منصور بن عبدالله الشهراني", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m9", name: "أسماء جابر يحيى الحريصي", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m10", name: "حاتم بن محمد يحيى العسيري", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m11", name: "نهى بنت سعيد بن حسن آل حيدر", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m12", name: "رغد خالد الشاويش", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m13", name: "محمد عوض عثمان الشهري", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m14", name: "عبير إبراهيم حسن حمدي", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m15", name: "فاطمة بنت سعيد بن جابر القحطاني", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m16", name: "رانيا عبدالرحمن غرمان آل غرمان العمري", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m17", name: "طلال حسين سعيد آل ناجي القحطاني", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "org-m18", name: "وعد بنت علي بن يحيى شراحيلي", roleId: "committee_member", committeeId: "demo-c-organization" },
+  { slug: "finance-m1", name: "باسل حمدان الشهري", roleId: "committee_member", committeeId: "demo-c-finance" },
+  { slug: "finance-m2", name: "محمد سعيد سيرة الشهراني", roleId: "committee_member", committeeId: "demo-c-finance" },
+  { slug: "finance-m3", name: "ياسر إبراهيم", roleId: "committee_member", committeeId: "demo-c-finance" },
 ];
 
 export const demoPeople = [...demoLeadership, ...demoCommitteePeople, ...demoMembers];

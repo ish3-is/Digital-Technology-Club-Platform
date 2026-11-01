@@ -49,7 +49,6 @@ export async function seedOperations(ctx: SeedContext) {
     ["media-head", "media_lead"],
     ["media-deputy", "media_lead"],
     ["digital-head", "digital_lead"],
-    ["digital-deputy", "digital_lead"],
     ["finance-demo", "finance_lead"],
     ["org-deputy", "resources_lead"],
   ];

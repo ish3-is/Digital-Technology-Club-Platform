@@ -49,6 +49,14 @@ describe('demo dataset definitions', () => {
     for (const a of demoActivities) expect(a.slug).toBeTruthy();
   });
 
+  it('maps all 42 supplied club members to leadership or their listed committee', () => {
+    const suppliedMembers = demoPeople.filter((person) => person.slug !== 'supervisor');
+    expect(suppliedMembers).toHaveLength(42);
+    expect(new Set(suppliedMembers.map((person) => person.name)).size).toBe(42);
+    expect(suppliedMembers.filter((person) => person.clubWide)).toHaveLength(4);
+    expect(suppliedMembers.filter((person) => person.committeeId)).toHaveLength(38);
+  });
+
   it('derives stable demo ids from the same slug every time', () => {
     expect(demoId('ops-budget-operating')).toBe(demoId('ops-budget-operating'));
     expect(demoId('ops-budget-operating')).not.toBe(demoId('ops-budget-uiux'));

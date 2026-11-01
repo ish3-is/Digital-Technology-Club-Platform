@@ -220,11 +220,11 @@ export function PeopleCenter({
   return (
     <div className="governance-center">
       <div className="page-heading">
-        <span className="eyebrow">المرحلة الخامسة · الناس والعضوية</span>
-        <h1>الناس والمساهمة</h1>
+        <span className="eyebrow">المرحلة الخامسة · الأعضاء والعضوية</span>
+        <h1>الأعضاء والمساهمة</h1>
         <p>من الطلب إلى العضوية، ومن المساهمة إلى الأثر الموثّق.</p>
       </div>
-      <nav className="gov-tabs" aria-label="مساحات الناس">
+      <nav className="gov-tabs" aria-label="مساحات الأعضاء">
         {tabs.map((t) => (
           <Link
             key={t.key}
@@ -237,7 +237,7 @@ export function PeopleCenter({
       </nav>
       {loadError && (
         <p className="muted" role="status">
-          تعذر تحميل بعض بيانات مساحة الناس: {loadError} — بقية المساحة متاحة.
+          تعذر تحميل بعض بيانات مساحة الأعضاء: {loadError} — بقية المساحة متاحة.
         </p>
       )}
       {noTerm && !loadError && (
@@ -349,7 +349,7 @@ function PeopleTab({
             </article>
           ))
         ) : (
-          <p>لا توجد عناصر تنتظر إجراءك في مساحة الناس.</p>
+          <p>لا توجد عناصر تنتظر إجراءك في مساحة الأعضاء.</p>
         )}
       </section>
     </>

@@ -12,6 +12,22 @@ import { db } from "@/db";
 import { auditLogs } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { z } from "zod";
+import {
+  committeeFormationOptions,
+  createCommitteeFormation,
+  updateCommitteeFormation,
+} from "@/lib/committees";
+import { onlineMembers, touchPresence } from "@/lib/presence";
+
+const formationInput = z
+  .object({
+    name: z.string().trim().min(2).max(120),
+    description: z.string().trim().max(2000).optional(),
+    memberIds: z.array(z.string().min(1)).min(1).max(100),
+    headId: z.string().min(1).nullable().optional(),
+    approverIds: z.array(z.string().min(1)).min(1).max(5),
+  })
+  .strict();
 async function route(req: Request) {
   try {
     const path = new URL(req.url).pathname.split("/").slice(2);
@@ -32,7 +48,11 @@ async function route(req: Request) {
     if (!write && path[0] === "foundation")
       return Response.json(await foundation(ctx));
     if (!write && path[0] === "committees" && path[1])
-      return Response.json(await committee(ctx, path[1]));
+      return path[1] === "formation-options"
+        ? Response.json(await committeeFormationOptions(ctx))
+        : Response.json(await committee(ctx, path[1]));
+    if (!write && path[0] === "presence")
+      return Response.json(await onlineMembers());
     if (!write && path[0] === "admin") {
       if (!permits(ctx.grants, "organization.manage"))
         throw new HttpError(403, "ليست لديك صلاحية");
@@ -62,15 +82,31 @@ async function route(req: Request) {
               .name,
           ),
         );
-      if (req.method === "PATCH" && path[0] === "committees" && path[1])
+      if (req.method === "POST" && path[0] === "presence")
+        return Response.json(await touchPresence(ctx));
+      if (req.method === "POST" && path[0] === "committees" && !path[1])
         return Response.json(
-          await updateCommittee(
-            ctx,
-            path[1],
-            z.object({ description: z.string().trim().max(2000) }).parse(body)
-              .description,
-          ),
+          await createCommitteeFormation(ctx, formationInput.parse(body)),
+          { status: 201 },
         );
+      if (req.method === "PATCH" && path[0] === "committees" && path[1])
+        return path[2] === "formation"
+          ? Response.json(
+              await updateCommitteeFormation(
+                ctx,
+                path[1],
+                formationInput.parse(body),
+              ),
+            )
+          : Response.json(
+              await updateCommittee(
+                ctx,
+                path[1],
+                z.object({ description: z.string().trim().max(2000) }).parse(
+                  body,
+                ).description,
+              ),
+            );
       if (req.method === "POST" && path[0] === "notifications" && path[1])
         return Response.json(await readNotification(ctx, path[1]));
     }

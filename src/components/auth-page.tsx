@@ -1,11 +1,13 @@
 import { Brand } from "./brand";
 import { AuthForm } from "./auth-form";
-import { ShieldCheck, ArrowUpLeft } from "lucide-react";
+import { MadarMark } from "./madar-mark";
+import Link from "next/link";
+import { ShieldCheck, ArrowUpLeft, UserPlus, Check } from "lucide-react";
 export function AuthPage({
   mode = "login",
   name,
 }: {
-  mode?: "login" | "forgot" | "reset" | "setup";
+  mode?: "login" | "forgot" | "reset" | "setup" | "request";
   name?: string;
 }) {
   const titles = {
@@ -13,6 +15,7 @@ export function AuthPage({
     forgot: "نرجعك إلى المقر",
     reset: "بداية آمنة جديدة",
     setup: "أهلًا بك في فريق النادي",
+    request: "طلب إضافة حساب",
   };
   return (
     <main id="main" className="auth-layout">
@@ -24,12 +27,25 @@ export function AuthPage({
           <p>
             {mode === "login"
               ? "مساحتك للعمل مع الفريق، وصناعة أثر يستحق."
+              : mode === "request"
+                ? "الحسابات مرتبطة بعضوية معتمدة حتى تبقى بيانات النادي وصلاحياته آمنة."
               : mode === "setup"
                 ? "خطوة بسيطة قبل البداية. تأكد من اسمك ليتعرف عليك فريقك."
                 : "استعد الوصول إلى حسابك بأمان."}
           </p>
-          <AuthForm mode={mode} name={name} />
-          {mode !== "login" && (
+          {mode === "request" ? (
+            <div className="account-request-card">
+              <UserPlus size={24} />
+              <h2>كيف تحصل على حساب؟</h2>
+              <p><Check size={16} /> تأكد من وجود اسمك في قائمة أعضاء النادي.</p>
+              <p><Check size={16} /> يضيف مسؤول النادي حسابك ودورك واللجنة التابعة لك.</p>
+              <p><Check size={16} /> تصلك بيانات الدخول المؤقتة لتغييرها عند أول دخول.</p>
+              <Link className="button primary" href="/login">العودة إلى تسجيل الدخول</Link>
+            </div>
+          ) : (
+            <AuthForm mode={mode} name={name} />
+          )}
+          {mode !== "login" && mode !== "request" && (
             <a className="back-link" href="/login">
               العودة إلى تسجيل الدخول
             </a>
@@ -42,11 +58,15 @@ export function AuthPage({
                 <br />
                 <span>للانضمام أو تفعيل الحساب، تواصل مع مسؤول النادي.</span>
               </p>
+              <Link className="button secondary" href="/request-account">
+                طلب إضافة حساب
+              </Link>
             </div>
           )}
         </div>
         <footer>
-          جامعة الملك خالد <span>•</span> نادي التقنية الرقمية
+          <span>جامعة الملك خالد <b>•</b> نادي التقنية الرقمية</span>
+          <MadarMark compact />
         </footer>
       </section>
       <aside className="auth-story">
