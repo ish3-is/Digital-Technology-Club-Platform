@@ -564,7 +564,7 @@ src/db/
 DATABASE_URL=
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=
-SMTP_URL=
+RESEND_API_KEY=
 MAIL_FROM=
 ```
 
@@ -588,14 +588,14 @@ npm start
 
 # البريد
 
-تستخدم استعادة كلمة المرور:
+على Render المجاني تستخدم استعادة كلمة المرور واجهة Resend عبر HTTPS:
 
 ```env
-SMTP_URL=
+RESEND_API_KEY=re_...
 MAIL_FROM=
 ```
 
-إذا لم يتم إعداد SMTP فلا يتم ادعاء إرسال بريد وهمي، ولا تحفظ روابط الاستعادة الحساسة في Logs.
+يمكن استخدام `SMTP_URL` بدلًا من Resend على استضافة تسمح بمنافذ SMTP. إذا لم يتم إعداد أي مزود فلا يتم ادعاء إرسال بريد وهمي، ولا تحفظ روابط الاستعادة الحساسة في Logs.
 
 ---
 

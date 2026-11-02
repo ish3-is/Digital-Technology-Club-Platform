@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { isMailConfigured } from "@/lib/mail";
 import { toNextJsHandler } from "better-auth/next-js";
 const handlers = toNextJsHandler(auth);
 export const GET = handlers.GET;
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
       { message: "هذا الإجراء غير متاح عبر هذه المساحة" },
       { status: 403 },
     );
-  if (path.endsWith("/request-password-reset") && !process.env.SMTP_URL)
+  if (path.endsWith("/request-password-reset") && !isMailConfigured())
     return Response.json(
       { message: "خدمة استعادة كلمة المرور غير مهيأة. تواصل مع إدارة النادي." },
       { status: 503 },

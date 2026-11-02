@@ -27,6 +27,7 @@ const REQUIRED_PRODUCTION: { key: string; why: string }[] = [
 const SECRET_KEYS = new Set([
   "BETTER_AUTH_SECRET",
   "DATABASE_URL",
+  "RESEND_API_KEY",
   "SMTP_URL",
   "CLUB_INITIAL_PASSWORD",
 ]);
@@ -96,9 +97,9 @@ export function validateConfiguration(
     if (env.CLUB_E2E === "1")
       errors.push("CLUB_E2E: وضع الاختبار لا يعمل في الإنتاج.");
 
-    if (!env.SMTP_URL || !env.MAIL_FROM)
+    if (!env.MAIL_FROM || (!env.RESEND_API_KEY && !env.SMTP_URL))
       warnings.push(
-        "SMTP_URL/MAIL_FROM: غير مضبوطة — استعادة كلمة المرور ستتعطل، أما بقية التطبيق فسيعمل.",
+        "RESEND_API_KEY/MAIL_FROM أو SMTP_URL/MAIL_FROM: غير مضبوطة — استعادة كلمة المرور ستتعطل، أما بقية التطبيق فسيعمل.",
       );
   }
 

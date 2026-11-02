@@ -2,9 +2,9 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { eq } from "drizzle-orm";
-import nodemailer from "nodemailer";
 import { db } from "../db";
 import * as schema from "../db/schema";
+import { sendTextEmail } from "./mail";
 if (
   !process.env.BETTER_AUTH_SECRET ||
   process.env.BETTER_AUTH_SECRET.length < 32
@@ -20,10 +20,7 @@ export const auth = betterAuth({
     minPasswordLength: 12,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
-      if (!process.env.SMTP_URL || !process.env.MAIL_FROM)
-        throw new Error("خدمة البريد غير مهيأة");
-      await nodemailer.createTransport(process.env.SMTP_URL).sendMail({
-        from: process.env.MAIL_FROM,
+      await sendTextEmail({
         to: user.email,
         subject: "استعادة الدخول إلى المقر الرقمي",
         text: `لاستعادة كلمة المرور افتح الرابط التالي خلال ساعة:\n${url}\nإذا لم تطلب ذلك فتجاهل الرسالة.`,
