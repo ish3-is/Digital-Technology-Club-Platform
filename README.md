@@ -564,7 +564,7 @@ src/db/
 DATABASE_URL=
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=
-RESEND_API_KEY=
+BREVO_API_KEY=
 MAIL_FROM=
 ```
 
@@ -588,7 +588,14 @@ npm start
 
 # البريد
 
-على Render المجاني تستخدم استعادة كلمة المرور واجهة Resend عبر HTTPS:
+للإطلاق التجريبي المجاني بلا نطاق، يمكن استخدام Brevo عبر HTTPS بعد توثيق بريد المرسل:
+
+```env
+BREVO_API_KEY=xkeysib-...
+MAIL_FROM=نادي التقنية الرقمية <your-address@gmail.com>
+```
+
+وعند توفر نطاق رسمي، يوصى باستخدام Resend عبر HTTPS:
 
 ```env
 RESEND_API_KEY=re_...

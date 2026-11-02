@@ -10,8 +10,16 @@ type MailEnvironment = Record<string, string | undefined>;
 
 export function isMailConfigured(env: MailEnvironment = process.env) {
   return Boolean(
-    env.MAIL_FROM && (env.RESEND_API_KEY || env.SMTP_URL),
+    env.MAIL_FROM &&
+      (env.BREVO_API_KEY || env.RESEND_API_KEY || env.SMTP_URL),
   );
+}
+
+function mailbox(value: string) {
+  const match = value.match(/^\s*(.*?)\s*<([^<>]+)>\s*$/);
+  if (!match) return { email: value.trim() };
+  const name = match[1]?.trim().replace(/^"|"$/g, "");
+  return { email: match[2]!.trim(), ...(name ? { name } : {}) };
 }
 
 /**
@@ -23,6 +31,28 @@ export async function sendTextEmail(
   env: MailEnvironment = process.env,
 ) {
   if (!env.MAIL_FROM) throw new Error("عنوان مرسل البريد غير مهيأ");
+
+  if (env.BREVO_API_KEY) {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "api-key": env.BREVO_API_KEY,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sender: mailbox(env.MAIL_FROM),
+        to: [{ email: message.to }],
+        subject: message.subject,
+        textContent: message.text,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`تعذر إرسال البريد (${response.status})`);
+    }
+    return;
+  }
 
   if (env.RESEND_API_KEY) {
     const response = await fetch("https://api.resend.com/emails", {
