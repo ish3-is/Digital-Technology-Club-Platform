@@ -10,7 +10,17 @@ test("الدخول والتهيئة والنطاق والجوال والثيم �
   await expect(page.getByText("إحدى أعمال")).toBeVisible();
   await page.getByRole("link", { name: "طلب إضافة حساب" }).click();
   await expect(page.getByRole("heading", { name: "طلب إضافة حساب" })).toBeVisible();
-  await expect(page.getByText("يضيف مسؤول النادي حسابك ودورك واللجنة التابعة لك.")).toBeVisible();
+  await page.getByLabel("الاسم الكامل في سجل النادي").fill("مشعل الجذمي");
+  await page.getByLabel("البريد الإلكتروني").fill("new-member@example.test");
+  await page.getByLabel("لجنتك").selectOption("media");
+  await page.getByRole("button", { name: "مطابقة العضوية وإرسال الطلب" }).click();
+  await expect(
+    page.getByText(/اسمك غير موجود ضمن هذه اللجنة/),
+  ).toBeVisible();
+  await page.getByLabel("لجنتك").selectOption("digital");
+  await page.getByRole("button", { name: "مطابقة العضوية وإرسال الطلب" }).click();
+  await expect(page.getByRole("heading", { name: "وصل طلبك" })).toBeVisible();
+  await expect(page.getByText("تمت مطابقة اسمك وتسجيل الطلب")).toBeVisible();
   await page.getByRole("link", { name: "العودة إلى تسجيل الدخول" }).click();
   await page.screenshot({
     path: "test-results/login-desktop.png",

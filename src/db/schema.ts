@@ -101,6 +101,63 @@ export const committees = pgTable("committees", {
   description: text("description").notNull().default(""),
   active: boolean("active").notNull().default(true),
 });
+export const officialClubRoster = pgTable(
+  "official_club_roster",
+  {
+    id: text("id").primaryKey(),
+    fullName: text("full_name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    aliases: jsonb("aliases").$type<string[]>().notNull().default([]),
+    groupKey: text("group_key").notNull(),
+    committeeId: text("committee_id").references(() => committees.id, {
+      onDelete: "set null",
+    }),
+    position: text("position").notNull().default("member"),
+    sourceLabel: text("source_label").notNull().default("سجل أعضاء النادي"),
+    active: boolean("active").notNull().default(true),
+    claimedUserId: text("claimed_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("official_roster_group_idx").on(t.groupKey),
+    index("official_roster_name_idx").on(t.normalizedName),
+    uniqueIndex("official_roster_claimed_user_idx")
+      .on(t.claimedUserId)
+      .where(sql`${t.claimedUserId} IS NOT NULL`),
+  ],
+);
+export const accountAccessRequests = pgTable(
+  "account_access_requests",
+  {
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+    rosterId: text("roster_id")
+      .notNull()
+      .references(() => officialClubRoster.id),
+    fullName: text("full_name").notNull(),
+    normalizedName: text("normalized_name").notNull(),
+    email: text("email").notNull(),
+    groupKey: text("group_key").notNull(),
+    status: text("status").notNull().default("pending"),
+    decisionNote: text("decision_note").notNull().default(""),
+    reviewedBy: text("reviewed_by").references(() => user.id),
+    reviewedAt: time("reviewed_at"),
+    createdAt: time("created_at").notNull().defaultNow(),
+    updatedAt: time("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "account_access_request_status",
+      sql`${t.status} in ('pending','approved','rejected','provisioned')`,
+    ),
+    index("account_access_request_status_idx").on(t.status, t.createdAt),
+    uniqueIndex("account_access_request_email_pending")
+      .on(t.email)
+      .where(sql`${t.status} = 'pending'`),
+  ],
+);
 export const committeeApprovers = pgTable(
   "committee_approvers",
   {

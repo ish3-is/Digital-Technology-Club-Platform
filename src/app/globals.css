@@ -372,33 +372,54 @@ html[data-theme="dark"] .brand .brand-on-dark {
   padding: 8px 12px;
   font-size: 11px;
 }
-.account-request-card {
-  display: grid;
-  gap: 14px;
-  margin-top: 30px;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+.account-request-form {
+  gap: 16px;
 }
-.account-request-card > svg {
-  color: var(--accent);
-}
-.account-request-card h2 {
-  margin: 0;
-  font-size: 17px;
-}
-.account-request-card p {
+.request-assurance {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  margin: 0;
-  font-size: 11px;
+  gap: 10px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
   color: var(--muted);
 }
-.account-request-card p svg {
+.request-assurance svg {
   flex: 0 0 auto;
+  color: var(--accent);
+}
+.request-assurance p,
+.request-privacy {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.request-privacy {
+  color: var(--muted);
+  text-align: center;
+}
+.account-request-success {
+  display: grid;
+  gap: 12px;
+  margin-top: 30px;
+  padding: 24px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+}
+.account-request-success svg {
   color: var(--success);
+}
+.account-request-success h2,
+.account-request-success p {
+  margin: 0;
+}
+.account-request-success h2 {
+  font-size: 18px;
+}
+.account-request-success p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.9;
 }
 .auth-content footer {
   font-size: 11px;

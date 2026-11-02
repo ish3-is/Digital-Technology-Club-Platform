@@ -33,7 +33,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "node --import tsx scripts/migrate.ts && node --import tsx scripts/seed-work-e2e.ts && npx next dev --webpack --hostname ::1 --port 3001",
+      "node --import tsx scripts/migrate.ts && node --import tsx scripts/seed-official-roster.ts && node --import tsx scripts/seed-work-e2e.ts && npx next dev --webpack --hostname ::1 --port 3001",
     // Probe the app's IPv6 listener, not another app on 127.0.0.1:3001.
     url: "http://[::1]:3001/login",
     reuseExistingServer: false,

@@ -1,8 +1,9 @@
 import { Brand } from "./brand";
 import { AuthForm } from "./auth-form";
+import { AccountRequestForm } from "./account-request-form";
 import { MadarMark } from "./madar-mark";
 import Link from "next/link";
-import { ShieldCheck, ArrowUpLeft, UserPlus, Check } from "lucide-react";
+import { ShieldCheck, ArrowUpLeft } from "lucide-react";
 export function AuthPage({
   mode = "login",
   name,
@@ -34,18 +35,16 @@ export function AuthPage({
                 : "استعد الوصول إلى حسابك بأمان."}
           </p>
           {mode === "request" ? (
-            <div className="account-request-card">
-              <UserPlus size={24} />
-              <h2>كيف تحصل على حساب؟</h2>
-              <p><Check size={16} /> تأكد من وجود اسمك في قائمة أعضاء النادي.</p>
-              <p><Check size={16} /> يضيف مسؤول النادي حسابك ودورك واللجنة التابعة لك.</p>
-              <p><Check size={16} /> تصلك بيانات الدخول المؤقتة لتغييرها عند أول دخول.</p>
-              <Link className="button primary" href="/login">العودة إلى تسجيل الدخول</Link>
-            </div>
+            <AccountRequestForm />
           ) : (
             <AuthForm mode={mode} name={name} />
           )}
           {mode !== "login" && mode !== "request" && (
+            <a className="back-link" href="/login">
+              العودة إلى تسجيل الدخول
+            </a>
+          )}
+          {mode === "request" && (
             <a className="back-link" href="/login">
               العودة إلى تسجيل الدخول
             </a>
